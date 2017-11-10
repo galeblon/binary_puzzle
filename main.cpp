@@ -17,8 +17,12 @@ int main() {
 	Conio2_Init();
 #endif
 
+	textbackground(BLUE);
+	clrscr();
+
+
 	board gameBoard;
-	gameBoard.initialize();
+	gameBoard.initialize(DEFAULT_SIZE);
 	x = gameBoard.originPoint.x + 1;
 	y = gameBoard.originPoint.y + 1;
 	// settitle ustawia tytu³ okienka
@@ -29,7 +33,7 @@ int main() {
 		// proszê zerkn¹æ do conio2.h na listê dostêpnych kolorów
 		textbackground(BLACK);
 		// czyœcimy ekran: wype³niamy spacjami z ustawionym kolrem t³a
-		clrscr();
+		//clrscr();
 		// ustawiamy kolor tekstu na jasnoszary (7 == LIGHTGRAY)
 		textcolor(7);
 		// przesuwamy kursor do kolumny 55 i wiersza 1
@@ -45,7 +49,9 @@ int main() {
 		gotoxy(55, 4);
 		cputs("enter = zmiana koloru tla");
 
-		gameBoard.show();
+		drawLegend(2, 2, YELLOW);
+		gameBoard.show(DARKGRAY);
+
 		// wypisujemy na ekranie kod ostatnio naciœniêtego klawisza
 		if(zero) sprintf(txt, "kod klawisza: 0x00 0x%02x", zn);
 		else sprintf(txt, "kod klawisza: 0x%02x", zn);
@@ -55,9 +61,6 @@ int main() {
 		gotoxy(x, y);
 		textcolor(attr);
 		textbackground(back);
-		// putch rysuje jeden znak i przesuwa kursor w prawo
-		putch('*');
-		gotoxy(x, y);
 		// czekamy na naciœniêcie klawisza i odczytujemy jego kod,
 		// wiêkszoœæ kodów klawiszy odpowiada ich znakom, np.
 		// a to 'a', 2 to '2', + to '+', ale niektóre klawisze
@@ -66,6 +69,8 @@ int main() {
 		// to zero i 'H'
 		zero = 0;
 		zn = getch();
+		textbackground(BLUE);
+		//clrscr();
 		// nie chcemy, aby klawisz 'H' dzia³a³ jako strza³ka w górê
 		// wiêc sprawdzamy, czy pierwszym znakiem by³o zero
 		if(zn == 0) {
@@ -76,9 +81,10 @@ int main() {
 			else if (zn == 0x4b) move(1, 0, &x, &y, &gameBoard); //x--;
 			else if (zn == 0x4d) move(-1, 0, &x, &y, &gameBoard); //x++;
 		} else if(zn == ' ') attr = (attr + 1) % 16;
-		else if(zn == 0x0d) back = (back + 1) % 16;
+		//else if(zn == 0x0d) back = (back + 1) % 16;
 		else if (zn == 0x31) setField(x, y, &gameBoard, oneS);
 		else if (zn == 0x30) setField(x, y, &gameBoard, zeroS);
+		else if (zn == 0x08) setField(x, y, &gameBoard, unset);
 	} while (zn != 'q' && zn != 0x1b);
 	gameBoard.cleanUp();
 	return 0;

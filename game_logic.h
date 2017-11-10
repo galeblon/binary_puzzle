@@ -1,10 +1,12 @@
 #ifndef game_logic
 #define game_logic
 #include<iostream>
+#include"conio2.h"
+
 
 #define DEFAULT_SIZE 8
-#define ORIGIN_X 5
-#define ORIGIN_Y 3
+#define ORIGIN_X 30
+#define ORIGIN_Y 2
 
 
 enum states {
@@ -28,14 +30,16 @@ struct board {
 	int size = DEFAULT_SIZE;
 	field** plane = NULL;
 
-	void initialize();
+	void initialize(int newSize);
 	void cleanUp();
 
-	void show();
+	void show(int color);
 };
 
 
-void move(int lr, int ud, int* x, int* y, board* gameBoard);
-int setField(int x, int y, board* gameBoard, states state);
+void move(int lr, int ud, int* x, int* y, const board* gameBoard);
+int setField(int x, int y, const board* gameBoard, states state);
+bool checkRule1(const board* gameBoard, int x, int y, states state);
+
 
 #endif 
