@@ -1,6 +1,7 @@
 #include"game_logic.h"
 #include"game_display.h"
 
+
 void board::initialize(int newSize) {
 	size = newSize;
 	originPoint.setCoord(ORIGIN_X, ORIGIN_Y);
@@ -16,6 +17,7 @@ void board::cleanUp() {
 	for (int i = 0; i < size; i++)
 		delete[] plane[i];
 	delete[] plane;
+	plane = NULL;
 }
 
 void move(int lr, int ud, int* x, int* y, const board* gameBoard) {
@@ -49,21 +51,20 @@ void move(int lr, int ud, int* x, int* y, const board* gameBoard) {
 	}
 }
 
-int setField(int x, int y, const board* gameBoard, states state) {
-	x -= gameBoard->originPoint.x + 1;
-	y -= gameBoard->originPoint.y + 1;
+int setField(int x, int y, const board* gameBoard, states state, bool editable) {
 	if (gameBoard->plane[y][x].editable == true) {
 		if (checkRule1(gameBoard, x, y, state)) {
 			gameBoard->plane[y][x].state = state;
-			return 0;
-		} else{
-			showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Zasada 1 zlamana");
+			gameBoard->plane[y][x].editable = editable;
 			return 1;
+		} else{
+			showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Zasada 1 zlamana.");
+			return 0;
 		}
 	}
 	else {
-		//tu bedzie error msg constant field
-		return 1;
+		showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Nie mozna zmieniac wartosci pola stalego.");
+		return 0;
 	}
 }
 
@@ -99,4 +100,59 @@ bool checkRule1(const board* gameBoard, int x, int y, states state) {
 	if (count_row >= 3)
 		return false;
 	return true;
+}
+
+int loadMap(board* gameBoard, const char* fName) {
+	FILE *fpointer;
+	char path[256] = { "map\\" };
+	strcat(path, fName);
+	gotoxy(1, 1);
+	cputs(path);
+	fpointer = fopen(path, "r+");
+	if(fpointer != NULL) {
+		gameBoard->cleanUp();
+		int size=0;
+		fscanf(fpointer, "%d\n", &size);
+		if (size < 2 || size%2) {
+			gameBoard->initialize(DEFAULT_SIZE);
+			showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size+2, "Niepoprawna wielkosc planszy.");
+
+		}
+		else {
+			gameBoard->initialize(size);
+			for (int i = 0; i < size; i++) {
+				for (int j = 0; j < size; j++) {
+					char val;
+					if (fscanf(fpointer, "%c", &val) == EOF) {
+						gameBoard->cleanUp();
+						gameBoard->initialize(DEFAULT_SIZE);
+						showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Plik zbyt krotki.");
+						fclose(fpointer);
+						return 0;
+					}
+					if (val == '1') {
+						if (!(setField(j, i, gameBoard, oneS, false))) {
+							showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
+							return 0;
+						}
+					}
+					else if (val == '0') {
+						if (!(setField(j, i, gameBoard, zeroS, false))) {
+							showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
+							return 0;
+						}
+					}
+				}
+				fscanf(fpointer, "\n");
+			}
+
+		}
+	
+	fclose(fpointer);
+	return 1;
+	}
+	else {
+		showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size+2, "Blad z otwarciem pliku.");
+		return 0;
+	}
 }

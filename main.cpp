@@ -70,7 +70,7 @@ int main() {
 		zero = 0;
 		zn = getch();
 		textbackground(BLUE);
-		//clrscr();
+		clrscr();
 		// nie chcemy, aby klawisz 'H' dzia³a³ jako strza³ka w górê
 		// wiêc sprawdzamy, czy pierwszym znakiem by³o zero
 		if(zn == 0) {
@@ -82,9 +82,10 @@ int main() {
 			else if (zn == 0x4d) move(-1, 0, &x, &y, &gameBoard); //x++;
 		} else if(zn == ' ') attr = (attr + 1) % 16;
 		//else if(zn == 0x0d) back = (back + 1) % 16;
-		else if (zn == 0x31) setField(x, y, &gameBoard, oneS);
-		else if (zn == 0x30) setField(x, y, &gameBoard, zeroS);
-		else if (zn == 0x08) setField(x, y, &gameBoard, unset);
+		else if (zn == 0x31) setField(x-gameBoard.originPoint.x-1, y-gameBoard.originPoint.y - 1, &gameBoard, oneS, true);
+		else if (zn == 0x30) setField(x - gameBoard.originPoint.x-1, y - gameBoard.originPoint.y - 1, &gameBoard, zeroS, true);
+		else if (zn == 0x08) setField(x - gameBoard.originPoint.x-1, y - gameBoard.originPoint.y - 1, &gameBoard, unset, true);
+		else if (zn == 0x6e) loadMap(&gameBoard, "default.txt");
 	} while (zn != 'q' && zn != 0x1b);
 	gameBoard.cleanUp();
 	return 0;

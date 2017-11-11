@@ -8,12 +8,15 @@ void board::show(int color) {
 	textcolor(WHITE);
 	for (int i = 0; i < size; i++) {
 		for (int j = 0; j < size; j++) {
+			if (plane[i][j].editable == false)
+				textbackground(DARKGRAY);
 			if (plane[i][j].state == oneS)
 				cputs("1");
 			else if (plane[i][j].state == zeroS)
 				cputs("0");
 			else
 				cputs(" ");
+			textbackground(BLACK);
 		}
 		gotoxy(x, ++y);
 	}
@@ -29,7 +32,10 @@ void drawLegend(int x, int y, int color) {
 	gotoxy(x, ++y);
 	cputs("nr. indeksu 171600");
 	gotoxy(x, ++y);
-	cputs("abcd");
+	cputs("abcde");
+	gotoxy(x, ++y);
+	gotoxy(x, ++y);
+	cputs("n - nowa gra      ");
 
 }
 
