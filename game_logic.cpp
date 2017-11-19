@@ -54,10 +54,22 @@ void move(int lr, int ud, int* x, int* y, const board* gameBoard) {
 int setField(int x, int y, const board* gameBoard, states state, bool editable) {
 	if (gameBoard->plane[y][x].editable == true) {
 		if (checkRule1(gameBoard, x, y, state)) {
-			gameBoard->plane[y][x].state = state;
-			gameBoard->plane[y][x].editable = editable;
-			return 1;
-		} else{
+			if (checkRule2(gameBoard, x, y, state)) {
+				if (checkRule3(gameBoard, x, y, state)) {
+					gameBoard->plane[y][x].state = state;
+					gameBoard->plane[y][x].editable = editable;
+					return 1;
+				}
+				else {
+					showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Zasada 3 zlamana.");
+					return 0;
+				}
+			}
+			else {
+				showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Zasada 2 zlamana.");
+				return 0;
+			}
+		}		else {
 			showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Zasada 1 zlamana.");
 			return 0;
 		}
@@ -99,6 +111,45 @@ bool checkRule1(const board* gameBoard, int x, int y, states state) {
 			break;
 	if (count_row >= 3)
 		return false;
+	return true;
+}
+bool checkRule2(const board* gameBoard, int x, int y, states state) {
+	if (state == unset)
+		return true;
+	int count_row = 1;
+	int count_col = 1;
+	for (int i = 0; i < gameBoard->size; i++) {
+		if (gameBoard->plane[y][i].state == state)
+			count_row++;
+		if (gameBoard->plane[i][x].state == state)
+			count_col++;
+	}
+	if (count_row > ((gameBoard->size) / 2) || count_col > ((gameBoard->size) / 2))
+		return false;
+	return true;
+}
+bool checkRule3(const board* gameBoard, int x, int y, states state) {
+	if (state == unset)
+		return true;
+	for (int i = 0; i < gameBoard->size; i++) {
+		int id_row = 0, id_col = 0;
+		for (int j = 0; j < gameBoard->size; j++) {
+			if (i != y) {
+				if (gameBoard->plane[y][j].state == gameBoard->plane[i][j].state && gameBoard->plane[i][j].state != unset)
+					id_row++;
+			}
+			if (i != x) {
+				if (gameBoard->plane[j][x].state == gameBoard->plane[j][i].state && gameBoard->plane[j][i].state != unset)
+					id_col++;
+			}		
+		}
+		if (gameBoard->plane[i][x].state == state)
+			id_row++;
+		if (gameBoard->plane[y][i].state == state)
+			id_col++;
+		if (id_row == gameBoard->size || id_col == gameBoard->size)
+			return false;
+	}
 	return true;
 }
 

@@ -32,8 +32,9 @@ void drawLegend(int x, int y, int color) {
 	gotoxy(x, ++y);
 	cputs("nr. indeksu 171600");
 	gotoxy(x, ++y);
-	cputs("abcde");
+	cputs("abcdef");
 	gotoxy(x, ++y);
+	cputs("esc - wyjscie     ");
 	gotoxy(x, ++y);
 	cputs("n - nowa gra      ");
 

@@ -25,6 +25,7 @@ int main() {
 	gameBoard.initialize(DEFAULT_SIZE);
 	x = gameBoard.originPoint.x + 1;
 	y = gameBoard.originPoint.y + 1;
+	gameBoard.show(DARKGRAY);
 	// settitle ustawia tytu³ okienka
 	settitle("Adrian Misiak 171600");
 	do {
