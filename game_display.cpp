@@ -1,5 +1,9 @@
 #include"game_display.h"
 
+#define LT_BORDER "\xC9"
+#define LB_BORDER "\xC8"
+#define RT_BORDER "\xBB"
+#define RB_BORDER "\xBC"
 
 void board::show(int color) {
 	drawBorder(originPoint.x, originPoint.y, size+2, size+2, color);
@@ -40,17 +44,16 @@ void drawLegend(int x, int y, int color) {
 
 }
 
-
 void drawBorder(int x, int y, int size_w, int size_h, int color) {
 	textcolor(color);
 	gotoxy(x, y);
-	cputs("\xC9"); // lewy górny róg.
+	cputs(LT_BORDER); // lewy górny róg.
 	gotoxy(x, y + size_h - 1);
-	cputs("\xC8"); // lewy dolny róg.
+	cputs(LB_BORDER); // lewy dolny róg.
 	gotoxy(x + size_w - 1, y);
-	cputs("\xBB"); // prawy górny róg.
+	cputs(RT_BORDER); // prawy górny róg.
 	gotoxy(x + size_w - 1, y + size_h - 1);
-	cputs("\xBC"); // prawy górny róg.
+	cputs(RB_BORDER); // prawy górny róg.
 	//pionowe obramowanie
 	int tmp = y + 1;
 	for (int i = 0; i < size_h - 2; i++, tmp++) {

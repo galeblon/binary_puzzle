@@ -14,6 +14,12 @@ enum states {
 	zeroS = 1,
 	oneS = 2
 };
+enum directions {
+	UP,
+	DOWN,
+	LEFT,
+	RIGHT
+};
 struct field {
 	states state;
 	bool editable = true;
@@ -37,7 +43,7 @@ struct board {
 };
 
 
-void move(int lr, int ud, int* x, int* y, const board* gameBoard);
+void move(directions direction, coords* global, const board* gameBoard);
 int setField(int x, int y, const board* gameBoard, states state, bool editable);
 bool checkRule1(const board* gameBoard, int x, int y, states state);
 bool checkRule2(const board* gameBoard, int x, int y, states state);

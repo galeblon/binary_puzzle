@@ -3,6 +3,8 @@
 
 
 void board::initialize(int newSize) {
+	if (plane != NULL)
+		cleanUp();
 	size = newSize;
 	originPoint.setCoord(ORIGIN_X, ORIGIN_Y);
 	plane = new field*[size];
@@ -20,39 +22,40 @@ void board::cleanUp() {
 	plane = NULL;
 }
 
-void move(int lr, int ud, int* x, int* y, const board* gameBoard) {
-	if (lr) {
-		if (lr > 0) {
-			if (*x > gameBoard->originPoint.x + 1)
-				(*x)--;
-			else
-				(*x) = gameBoard->originPoint.x + gameBoard->size;
-		}
-		else {
-			if (*x < gameBoard->originPoint.x + gameBoard->size)
-				(*x)++;
-			else
-				(*x) = gameBoard->originPoint.x + 1;
-		}
+void move(directions direction, coords* global, const board* gameBoard) {
+	switch (direction) {
+	case UP:
+		if (global->y > gameBoard->originPoint.y + 1)
+			(global->y)--;
+		else
+			(global->y) += gameBoard->size - 1;
+		break;
+	case DOWN:
+		if (global->y < gameBoard->originPoint.y + gameBoard->size)
+			(global->y)++;
+		else
+			(global->y) = gameBoard->originPoint.y + 1;
+		break;
+	case LEFT:
+		if (global->x > gameBoard->originPoint.x + 1)
+			(global->x)--;
+		else
+			(global->x) = gameBoard->originPoint.x + gameBoard->size;
+		break;
+	case RIGHT:
+		if (global->x < gameBoard->originPoint.x + gameBoard->size)
+			(global->x)++;
+		else
+			(global->x) = gameBoard->originPoint.x + 1;
+		break;
 
-	}
-	if (ud) {
-		if (ud > 0) {
-			if (*y > gameBoard->originPoint.y + 1)
-				(*y)--;
-			else
-				(*y) += gameBoard->size - 1;
-		} else{
-			if (*y < gameBoard->originPoint.y + gameBoard->size)
-				(*y)++;
-			else
-				(*y) = gameBoard->originPoint.y + 1;
-		}
 	}
 }
 
 int setField(int x, int y, const board* gameBoard, states state, bool editable) {
 	if (gameBoard->plane[y][x].editable == true) {
+		if (gameBoard->plane[y][x].state == state)
+			return 1;
 		if (checkRule1(gameBoard, x, y, state)) {
 			if (checkRule2(gameBoard, x, y, state)) {
 				if (checkRule3(gameBoard, x, y, state)) {
