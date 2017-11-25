@@ -6,6 +6,7 @@
 #define RB_BORDER "\xBC"
 
 void board::show(int color) {
+	textbackground(BLACK);
 	drawBorder(originPoint.x, originPoint.y, size+2, size+2, color);
 	int x = originPoint.x + 1; int y = originPoint.y + 1;
 	gotoxy(x, y);
@@ -14,9 +15,9 @@ void board::show(int color) {
 		for (int j = 0; j < size; j++) {
 			if (plane[i][j].editable == false)
 				textbackground(DARKGRAY);
-			if (plane[i][j].state == oneS)
+			if (plane[i][j].state == S_ONE)
 				cputs("1");
-			else if (plane[i][j].state == zeroS)
+			else if (plane[i][j].state == S_ZERO)
 				cputs("0");
 			else
 				cputs(" ");
@@ -25,10 +26,12 @@ void board::show(int color) {
 		gotoxy(x, ++y);
 	}
 	textcolor(LIGHTGRAY);
+	textbackground(BLUE);
 }
 
 
 void drawLegend(int x, int y, int color) {
+	textbackground(BLACK);
 	drawBorder(x, y, L_WIDTH, L_HEIGHT, color);
 	x++; y++;
 	gotoxy(x, y);
@@ -41,6 +44,7 @@ void drawLegend(int x, int y, int color) {
 	cputs("esc - wyjscie     ");
 	gotoxy(x, ++y);
 	cputs("n - nowa gra      ");
+	textbackground(BLUE);
 
 }
 

@@ -1,6 +1,29 @@
 #include"game_logic.h"
 #include"game_display.h"
 
+actions getAction() {
+	char keyAction = getch();
+	if (!keyAction) {
+		keyAction = getch();
+		if (keyAction == 0x48) return MOVE_UP;
+		else if (keyAction == 0x50) return MOVE_DOWN;
+		else if (keyAction == 0x4B) return MOVE_LEFT;
+		else if (keyAction == 0x4D) return MOVE_RIGHT;
+	}
+	else if (keyAction == '1') return SET_FIELD_1;
+	else if (keyAction == '0') return SET_FIELD_0;
+	else if (keyAction == 0x08) return UNSET_FIELD;
+	else if (keyAction == 'n') return NEW_GAME;
+	else if (keyAction == 0x1B) return QUIT_GAME;
+	
+}
+
+coords globalToRelative(coords global, const board &gameBoard) {
+	coords relative;
+	relative.x = global.x - gameBoard.originPoint.x - 1;
+	relative.y = global.y - gameBoard.originPoint.y - 1;
+	return relative;
+}
 
 void board::initialize(int newSize) {
 	if (plane != NULL)
@@ -11,7 +34,7 @@ void board::initialize(int newSize) {
 	for (int i = 0; i < size; i++) {
 		plane[i] = new field[size];
 		for (int j = 0; j < size; j++) {
-			plane[i][j].state = unset;
+			plane[i][j].state = S_UNSET;
 		}
 	}
 }
@@ -52,7 +75,9 @@ void move(directions direction, coords* global, const board* gameBoard) {
 	}
 }
 
-int setField(int x, int y, const board* gameBoard, states state, bool editable) {
+int setField(coords relative, const board* gameBoard, states state, bool editable) {
+	int x = relative.x;
+	int y = relative.y;
 	if (gameBoard->plane[y][x].editable == true) {
 		if (gameBoard->plane[y][x].state == state)
 			return 1;
@@ -85,7 +110,7 @@ int setField(int x, int y, const board* gameBoard, states state, bool editable) 
 
 
 bool checkRule1(const board* gameBoard, int x, int y, states state) {
-	if (state == unset)
+	if (state == S_UNSET)
 		return true;
 	int count_row = 1;
 	int count_col = 1;
@@ -117,7 +142,7 @@ bool checkRule1(const board* gameBoard, int x, int y, states state) {
 	return true;
 }
 bool checkRule2(const board* gameBoard, int x, int y, states state) {
-	if (state == unset)
+	if (state == S_UNSET)
 		return true;
 	int count_row = 1;
 	int count_col = 1;
@@ -132,17 +157,17 @@ bool checkRule2(const board* gameBoard, int x, int y, states state) {
 	return true;
 }
 bool checkRule3(const board* gameBoard, int x, int y, states state) {
-	if (state == unset)
+	if (state == S_UNSET)
 		return true;
 	for (int i = 0; i < gameBoard->size; i++) {
 		int id_row = 0, id_col = 0;
 		for (int j = 0; j < gameBoard->size; j++) {
 			if (i != y) {
-				if (gameBoard->plane[y][j].state == gameBoard->plane[i][j].state && gameBoard->plane[i][j].state != unset)
+				if (gameBoard->plane[y][j].state == gameBoard->plane[i][j].state && gameBoard->plane[i][j].state != S_UNSET)
 					id_row++;
 			}
 			if (i != x) {
-				if (gameBoard->plane[j][x].state == gameBoard->plane[j][i].state && gameBoard->plane[j][i].state != unset)
+				if (gameBoard->plane[j][x].state == gameBoard->plane[j][i].state && gameBoard->plane[j][i].state != S_UNSET)
 					id_col++;
 			}		
 		}
@@ -158,8 +183,8 @@ bool checkRule3(const board* gameBoard, int x, int y, states state) {
 
 int loadMap(board* gameBoard, const char* fName) {
 	FILE *fpointer;
-	char path[256] = { "map\\" };
-	strcat(path, fName);
+	char path[256];
+	sprintf(path, "map\\%s", fName);
 	gotoxy(1, 1);
 	cputs(path);
 	fpointer = fopen(path, "r+");
@@ -174,9 +199,12 @@ int loadMap(board* gameBoard, const char* fName) {
 		}
 		else {
 			gameBoard->initialize(size);
+			coords relative;
 			for (int i = 0; i < size; i++) {
 				for (int j = 0; j < size; j++) {
 					char val;
+					relative.x = j;
+					relative.y = i;
 					if (fscanf(fpointer, "%c", &val) == EOF) {
 						gameBoard->cleanUp();
 						gameBoard->initialize(DEFAULT_SIZE);
@@ -185,13 +213,13 @@ int loadMap(board* gameBoard, const char* fName) {
 						return 0;
 					}
 					if (val == '1') {
-						if (!(setField(j, i, gameBoard, oneS, false))) {
+						if (!(setField(relative, gameBoard, S_ONE, false))) {
 							showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
 							return 0;
 						}
 					}
 					else if (val == '0') {
-						if (!(setField(j, i, gameBoard, zeroS, false))) {
+						if (!(setField(relative, gameBoard, S_ZERO, false))) {
 							showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
 							return 0;
 						}
