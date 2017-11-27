@@ -4,6 +4,8 @@
 #define LB_BORDER "\xC8"
 #define RT_BORDER "\xBB"
 #define RB_BORDER "\xBC"
+#define HOR_BORDER "\xCD"
+#define VER_BORDER "\xBA"
 
 void board::show(int color) {
 	textbackground(BLACK);
@@ -39,11 +41,13 @@ void drawLegend(int x, int y, int color) {
 	gotoxy(x, ++y);
 	cputs("nr. indeksu 171600");
 	gotoxy(x, ++y);
-	cputs("abcdef");
+	cputs("abcdefg");
 	gotoxy(x, ++y);
 	cputs("esc - wyjscie     ");
 	gotoxy(x, ++y);
 	cputs("n - nowa gra      ");
+	gotoxy(x, ++y);
+	cputs("o - losowe wypelnienie");
 	textbackground(BLUE);
 
 }
@@ -62,17 +66,17 @@ void drawBorder(int x, int y, int size_w, int size_h, int color) {
 	int tmp = y + 1;
 	for (int i = 0; i < size_h - 2; i++, tmp++) {
 		gotoxy(x, tmp);
-		cputs("\xBA");
+		cputs(VER_BORDER);
 		gotoxy(x + size_w - 1, tmp);
-		cputs("\xBA");
+		cputs(VER_BORDER);
 	}
 	//poziome obramowanie
 	tmp = x + 1;
 	for (int i = 0; i < size_w - 2; i++, tmp++) {
 		gotoxy(tmp, y);
-		cputs("\xCD");
+		cputs(HOR_BORDER);
 		gotoxy(tmp, y + size_h - 1);
-		cputs("\xCD");
+		cputs(HOR_BORDER);
 	}
 	textcolor(LIGHTGRAY);
 }

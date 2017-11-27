@@ -1,5 +1,8 @@
 #include"game_logic.h"
 #include"game_display.h"
+#include<stdlib.h>
+#include<time.h>
+#include<math.h>
 
 actions getAction() {
 	char keyAction = getch();
@@ -14,8 +17,9 @@ actions getAction() {
 	else if (keyAction == '0') return SET_FIELD_0;
 	else if (keyAction == 0x08) return UNSET_FIELD;
 	else if (keyAction == 'n') return NEW_GAME;
+	else if (keyAction == 'o') return RANDOMIZE_BOARD;
 	else if (keyAction == 0x1B) return QUIT_GAME;
-	
+	return UNDEFINED_ACTION;
 }
 
 coords globalToRelative(coords global, const board &gameBoard) {
@@ -43,6 +47,28 @@ void board::cleanUp() {
 		delete[] plane[i];
 	delete[] plane;
 	plane = NULL;
+}
+void board::randomize(){
+	srand(time(NULL));
+	for (int i = 0; i < size; i++)
+		for (int j = 0; j < size; j++) {
+			plane[i][j].state = S_UNSET;
+			plane[i][j].editable = true;
+		}
+	int howMany = size*size*(rand() % (MAX_RAND_THRESHOLD - MIN_RAND_THRESHOLD) + MIN_RAND_THRESHOLD) / 100.0;
+	int count = 0; states state; coords relative;
+	for (int i = 0; i < pow(size, 4); i++) {
+		state = rand() % 2 ? S_ONE : S_ZERO;
+		relative.x = rand() % size;
+		relative.y = rand() % size;
+		if (setField(relative, this, state, false))
+			count++;
+		if (count == howMany)
+			break;
+	}
+	textbackground(BLUE);
+	clrscr();
+	show(DARKGRAY);
 }
 
 void move(directions direction, coords* global, const board* gameBoard) {
@@ -195,7 +221,8 @@ int loadMap(board* gameBoard, const char* fName) {
 		if (size < 2 || size%2) {
 			gameBoard->initialize(DEFAULT_SIZE);
 			showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size+2, "Niepoprawna wielkosc planszy.");
-
+			fclose(fpointer);
+			return 0;
 		}
 		else {
 			gameBoard->initialize(size);

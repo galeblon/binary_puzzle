@@ -4,11 +4,7 @@
 #include"game_logic.h"
 
 int main() {
-	bool continueFlag = true;
 	actions action;
-#ifndef __cplusplus
-	Conio2_Init();
-#endif
 
 	textbackground(BLUE);
 	clrscr();
@@ -32,7 +28,7 @@ int main() {
 		clrscr();
 		switch (action) {
 			case NEW_GAME: loadMap(&gameBoard, "default.txt"); break;
-			case QUIT_GAME: continueFlag = false; break;
+			case RANDOMIZE_BOARD: gameBoard.randomize(); break;
 			case MOVE_UP: move(UP, &global, &gameBoard); break;
 			case MOVE_DOWN: move(DOWN, &global, &gameBoard); break;
 			case MOVE_LEFT: move(LEFT, &global, &gameBoard); break;
@@ -41,7 +37,7 @@ int main() {
 			case SET_FIELD_0: setField(relative, &gameBoard, S_ZERO, true); break;
 			case UNSET_FIELD: setField(relative, &gameBoard, S_UNSET, true); break;
 			}
-	} while (continueFlag);
+	} while (action != QUIT_GAME);
 	gameBoard.cleanUp();
 	return 0;
 	}
