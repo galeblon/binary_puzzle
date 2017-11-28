@@ -4,7 +4,7 @@
 #include<stdio.h>
 
 #define DEFAULT_SIZE 8
-#define ORIGIN_X 30
+#define ORIGIN_X 50
 #define ORIGIN_Y 2
 #define NULL 0
 #define MIN_RAND_THRESHOLD 20
@@ -26,6 +26,7 @@ enum actions {
 	NEW_GAME,
 	QUIT_GAME,
 	RANDOMIZE_BOARD,
+	SIMPLE_TIP,
 	MOVE_UP,
 	MOVE_DOWN,
 	MOVE_LEFT,
@@ -70,7 +71,10 @@ int setField(coords relative, const board* gameBoard, states state, bool editabl
 maksymalnie 2 liczby o tym samym stanie mog¹ ze sob¹ s¹siadowaæ w danym wierszu lub kolumnie.
 Zwraca true jeœli wprowadzenie nie ³amie zasady, zwraca false w przeciwnym wypadku.*/
 bool checkRule1(const board* gameBoard, int x, int y, states state);
-bool checkRule2(const board* gameBoard, int x, int y, states state);
+
+/*Zwraca 0 w przypadku powodzenia liczbe ujemna to liczby w kolumnie,
+liczba dodatnia to liczby w wierszu przekroczyly dozwolona ilosc*/
+int checkRule2(const board* gameBoard, int x, int y, states state);
 bool checkRule3(const board* gameBoard, int x, int y, states state);
 
 /*Próbuje wczytaæ mapê z pliku o nazwie przekazanej do parametru do planszy przekazanej do parametru.

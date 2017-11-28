@@ -19,6 +19,7 @@ actions getAction() {
 	else if (keyAction == 'n') return NEW_GAME;
 	else if (keyAction == 'o') return RANDOMIZE_BOARD;
 	else if (keyAction == 0x1B) return QUIT_GAME;
+	else if (keyAction == 'p') return SIMPLE_TIP;
 	return UNDEFINED_ACTION;
 }
 
@@ -108,7 +109,7 @@ int setField(coords relative, const board* gameBoard, states state, bool editabl
 		if (gameBoard->plane[y][x].state == state)
 			return 1;
 		if (checkRule1(gameBoard, x, y, state)) {
-			if (checkRule2(gameBoard, x, y, state)) {
+			if (!checkRule2(gameBoard, x, y, state)) {
 				if (checkRule3(gameBoard, x, y, state)) {
 					gameBoard->plane[y][x].state = state;
 					gameBoard->plane[y][x].editable = editable;
@@ -167,9 +168,9 @@ bool checkRule1(const board* gameBoard, int x, int y, states state) {
 		return false;
 	return true;
 }
-bool checkRule2(const board* gameBoard, int x, int y, states state) {
+int checkRule2(const board* gameBoard, int x, int y, states state) {
 	if (state == S_UNSET)
-		return true;
+		return 0;
 	int count_row = 1;
 	int count_col = 1;
 	for (int i = 0; i < gameBoard->size; i++) {
@@ -178,9 +179,11 @@ bool checkRule2(const board* gameBoard, int x, int y, states state) {
 		if (gameBoard->plane[i][x].state == state)
 			count_col++;
 	}
-	if (count_row > ((gameBoard->size) / 2) || count_col > ((gameBoard->size) / 2))
-		return false;
-	return true;
+	if (count_row > (gameBoard->size / 2))
+		return 1;
+	if (count_col > (gameBoard->size / 2))
+		return -1;
+	return 0;
 }
 bool checkRule3(const board* gameBoard, int x, int y, states state) {
 	if (state == S_UNSET)

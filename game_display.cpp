@@ -32,7 +32,9 @@ void board::show(int color) {
 }
 
 
-void drawLegend(int x, int y, int color) {
+void drawLegend(coords global, int color) {
+	int x = global.x;
+	int y = global.y;
 	textbackground(BLACK);
 	drawBorder(x, y, L_WIDTH, L_HEIGHT, color);
 	x++; y++;
@@ -48,8 +50,74 @@ void drawLegend(int x, int y, int color) {
 	cputs("n - nowa gra      ");
 	gotoxy(x, ++y);
 	cputs("o - losowe wypelnienie");
-	textbackground(BLUE);
+	gotoxy(x, ++y);
+	cputs("p - prosta podpowiedz");
+	textbackground(DEF_BG_COLOR);
 
+}
+char drawTipFor(int rel_x, int rel_y, int* x, int* y, const board* gameBoard, states state) {
+	char buff[2];
+	buff[0] = state == S_ZERO ? '0' : '1';
+	buff[1] = '\0';
+	char tmp[256];
+	int rule2;
+	if (checkRule1(gameBoard, rel_x, rel_y, state) || gameBoard->plane[rel_y][rel_x].state == state) {
+		if (!(rule2 = checkRule2(gameBoard, rel_x, rel_y, state)) || gameBoard->plane[rel_y][rel_x].state == state) {
+			if (checkRule3(gameBoard, rel_x, rel_y, state) || gameBoard->plane[rel_y][rel_x].state == state) {
+				return state==S_ZERO ? '0' : '1';
+			}
+			else {
+				gotoxy(*x, ++(*y));
+				cputs("dla ");
+				cputs(buff);
+				cputs(": Zasada 3 zlamana");
+			}
+		}
+		else {
+			gotoxy(*x, ++(*y));
+			cputs("dla ");
+			cputs(buff);
+			if (rule2 > 0) {
+				cputs(": wiersz ");
+				itoa(rel_y + 1, tmp, 10);
+				cputs(" przekracza");
+				gotoxy(*x, ++(*y));
+				cputs("liczbe elementow.");
+			}
+			else{
+				cputs(" kolumna ");
+				itoa(rel_x + 1, tmp, 10);
+				cputs(" przekracza");
+				gotoxy(*x, ++(*y));
+				cputs("liczbe elementow.");
+			}
+		}
+	}
+	else {
+		gotoxy(*x, ++(*y));
+		cputs("dla ");
+		cputs(buff);
+		cputs(": Zasada 1 zlamana");
+	}
+	return ' ';
+}
+void drawSimpleTip(coords global, coords relative, const board* gameBoard, int color) {
+	int x = global.x;
+	int y = global.y;
+	y += L_HEIGHT;
+	textbackground(BLACK);
+	drawBorder(x, y, T_WIDTH, T_HEIGHT, color);
+	gotoxy(++x, ++y);
+	cputs("Dostepne cyfry dla pola:  ");
+	int tmp_x = wherex() - 2;
+	int tmp_y = y;
+	char toShow[3];
+	toShow[2] = '\0';
+	toShow[0] = drawTipFor(relative.x, relative.y, &x, &y, gameBoard, S_ZERO);
+	toShow[1] = drawTipFor(relative.x, relative.y, &x, &y, gameBoard, S_ONE);
+	gotoxy(tmp_x, tmp_y);
+	cputs(toShow);
+	textbackground(DEF_BG_COLOR);
 }
 
 void drawBorder(int x, int y, int size_w, int size_h, int color) {
