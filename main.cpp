@@ -35,6 +35,7 @@ int main() {
 		switch (action) {
 			case NEW_GAME: loadMap(&gameBoard, "default.txt"); break;
 			case RANDOMIZE_BOARD: gameBoard.randomize(); break;
+			case RESIZE_BOARD: gameBoard.resize(); break;
 			case SIMPLE_TIP: simpleTipToggle = simpleTipToggle ? false : true; break;
 			case MOVE_UP: move(UP, &global_c, &gameBoard); break;
 			case MOVE_DOWN: move(DOWN, &global_c, &gameBoard); break;

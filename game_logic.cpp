@@ -18,10 +18,12 @@ actions getAction() {
 	else if (keyAction == 0x08) return UNSET_FIELD;
 	else if (keyAction == 'n') return NEW_GAME;
 	else if (keyAction == 'o') return RANDOMIZE_BOARD;
+	else if (keyAction == 'r') return RESIZE_BOARD;
 	else if (keyAction == 0x1B) return QUIT_GAME;
 	else if (keyAction == 'p') return SIMPLE_TIP;
 	return UNDEFINED_ACTION;
 }
+
 
 coords globalToRelative(coords global, const board &gameBoard) {
 	coords relative;
@@ -29,6 +31,7 @@ coords globalToRelative(coords global, const board &gameBoard) {
 	relative.y = global.y - gameBoard.originPoint.y - 1;
 	return relative;
 }
+
 
 void board::initialize(int newSize) {
 	if (plane != NULL)
@@ -43,6 +46,8 @@ void board::initialize(int newSize) {
 		}
 	}
 }
+
+
 void board::cleanUp() {
 	for (int i = 0; i < size; i++)
 		delete[] plane[i];
@@ -71,6 +76,11 @@ void board::randomize(){
 	clrscr();
 	show(DARKGRAY);
 }
+
+void board::resize() {
+
+}
+
 
 void move(directions direction, coords* global, const board* gameBoard) {
 	switch (direction) {
@@ -102,6 +112,7 @@ void move(directions direction, coords* global, const board* gameBoard) {
 	}
 }
 
+
 int setField(coords relative, const board* gameBoard, states state, bool editable) {
 	int x = relative.x;
 	int y = relative.y;
@@ -110,7 +121,7 @@ int setField(coords relative, const board* gameBoard, states state, bool editabl
 			return 1;
 		if (checkRule1(gameBoard, x, y, state)) {
 			if (!checkRule2(gameBoard, x, y, state)) {
-				if (checkRule3(gameBoard, x, y, state)) {
+				if (!checkRule3(gameBoard, x, y, state)) {
 					gameBoard->plane[y][x].state = state;
 					gameBoard->plane[y][x].editable = editable;
 					return 1;
@@ -168,6 +179,8 @@ bool checkRule1(const board* gameBoard, int x, int y, states state) {
 		return false;
 	return true;
 }
+
+
 int checkRule2(const board* gameBoard, int x, int y, states state) {
 	if (state == S_UNSET)
 		return 0;
@@ -185,9 +198,11 @@ int checkRule2(const board* gameBoard, int x, int y, states state) {
 		return -1;
 	return 0;
 }
-bool checkRule3(const board* gameBoard, int x, int y, states state) {
+
+
+int checkRule3(const board* gameBoard, int x, int y, states state) {
 	if (state == S_UNSET)
-		return true;
+		return 0;
 	for (int i = 0; i < gameBoard->size; i++) {
 		int id_row = 0, id_col = 0;
 		for (int j = 0; j < gameBoard->size; j++) {
@@ -204,11 +219,14 @@ bool checkRule3(const board* gameBoard, int x, int y, states state) {
 			id_row++;
 		if (gameBoard->plane[y][i].state == state)
 			id_col++;
-		if (id_row == gameBoard->size || id_col == gameBoard->size)
-			return false;
+		if (id_row == gameBoard->size)
+			return (i+1);
+		if (id_col == gameBoard->size)
+			return -(i+1);
 	}
-	return true;
+	return 0;
 }
+
 
 int loadMap(board* gameBoard, const char* fName) {
 	FILE *fpointer;

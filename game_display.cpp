@@ -35,23 +35,25 @@ void board::show(int color) {
 void drawLegend(coords global, int color) {
 	int x = global.x;
 	int y = global.y;
-	textbackground(BLACK);
 	drawBorder(x, y, L_WIDTH, L_HEIGHT, color);
+	textbackground(BLACK);
 	x++; y++;
 	gotoxy(x, y);
-	cputs("Adrian Misiak     ");
+	cputs("Adrian Misiak");
 	gotoxy(x, ++y);
 	cputs("nr. indeksu 171600");
 	gotoxy(x, ++y);
-	cputs("abcdefg");
+	cputs("abcdefgh");
 	gotoxy(x, ++y);
-	cputs("esc - wyjscie     ");
+	cputs("esc - wyjscie");
 	gotoxy(x, ++y);
-	cputs("n - nowa gra      ");
+	cputs("n - nowa gra");
 	gotoxy(x, ++y);
 	cputs("o - losowe wypelnienie");
 	gotoxy(x, ++y);
 	cputs("p - prosta podpowiedz");
+	gotoxy(x, ++y);
+	cputs("r - zmiana rozmiaru");
 	textbackground(DEF_BG_COLOR);
 
 }
@@ -60,47 +62,56 @@ char drawTipFor(int rel_x, int rel_y, int* x, int* y, const board* gameBoard, st
 	buff[0] = state == S_ZERO ? '0' : '1';
 	buff[1] = '\0';
 	char tmp[256];
-	int rule2;
+	int rule2, rule3;
+	if (gameBoard->plane[rel_y][rel_x].editable == false) {
+		gotoxy(*x, (*y)+1);
+		cputs("Pole nieedytowalne.");
+		return ' ';
+	}
 	if (checkRule1(gameBoard, rel_x, rel_y, state) || gameBoard->plane[rel_y][rel_x].state == state) {
 		if (!(rule2 = checkRule2(gameBoard, rel_x, rel_y, state)) || gameBoard->plane[rel_y][rel_x].state == state) {
-			if (checkRule3(gameBoard, rel_x, rel_y, state) || gameBoard->plane[rel_y][rel_x].state == state) {
+			if ( !(rule3 = checkRule3(gameBoard, rel_x, rel_y, state)) || gameBoard->plane[rel_y][rel_x].state == state) {
 				return state==S_ZERO ? '0' : '1';
 			}
 			else {
-				gotoxy(*x, ++(*y));
-				cputs("dla ");
-				cputs(buff);
-				cputs(": Zasada 3 zlamana");
+				tipErrorMsg(x, y, rule3, 3, buff);
 			}
 		}
 		else {
-			gotoxy(*x, ++(*y));
-			cputs("dla ");
-			cputs(buff);
-			if (rule2 > 0) {
-				cputs(": wiersz ");
-				itoa(rel_y + 1, tmp, 10);
-				cputs(" przekracza");
-				gotoxy(*x, ++(*y));
-				cputs("liczbe elementow.");
-			}
-			else{
-				cputs(" kolumna ");
-				itoa(rel_x + 1, tmp, 10);
-				cputs(" przekracza");
-				gotoxy(*x, ++(*y));
-				cputs("liczbe elementow.");
-			}
+			tipErrorMsg(x, y, rule2>0?rel_y+1:-(rel_x+1), 2, buff);
 		}
 	}
 	else {
-		gotoxy(*x, ++(*y));
-		cputs("dla ");
-		cputs(buff);
-		cputs(": Zasada 1 zlamana");
+		tipErrorMsg(x, y, 0, 1, buff);
 	}
 	return ' ';
 }
+void tipErrorMsg(int* x, int* y, int rule_val, int rule, char* buff) {
+	char tmp[256];
+	gotoxy(*x, ++(*y));
+	cputs("dla ");
+	cputs(buff);
+	if (rule == 1) {
+		cputs(": Zasada 1 zlamana");
+	}
+	else if (rule == 2) {
+		rule_val > 0 ? cputs(": wiersz ") : cputs(": kolumna ");
+		itoa(rule_val > 0 ? rule_val: -rule_val, tmp, 10);
+		cputs(tmp);
+		cputs(" przekracza");
+		gotoxy(*x, ++(*y));
+		cputs("max liczbe elementow.");
+	}
+	else if (rule == 3) {
+		rule_val > 0 ? cputs(": wiersz identyczny") : cputs(": kolumna identyczna");
+		gotoxy(*x, ++(*y));
+		rule_val > 0 ? cputs("z wierszem nr.") : cputs("z kolumna nr.");
+		itoa(rule_val > 0 ? rule_val : -rule_val, tmp, 10);
+		cputs(tmp);
+	}
+}
+
+
 void drawSimpleTip(coords global, coords relative, const board* gameBoard, int color) {
 	int x = global.x;
 	int y = global.y;
@@ -121,6 +132,14 @@ void drawSimpleTip(coords global, coords relative, const board* gameBoard, int c
 }
 
 void drawBorder(int x, int y, int size_w, int size_h, int color) {
+	textbackground(BLACK);
+	int tmp_y = y;
+	gotoxy(x, y);
+	for (int i = 0; i < size_h; i++) {
+		for (int j = 0; j<size_w; j++)
+			cputs(" ");
+		gotoxy(x, ++tmp_y);
+	}
 	textcolor(color);
 	gotoxy(x, y);
 	cputs(LT_BORDER); // lewy górny róg.
