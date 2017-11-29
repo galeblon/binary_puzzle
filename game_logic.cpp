@@ -33,7 +33,9 @@ coords globalToRelative(coords global, const board &gameBoard) {
 }
 
 
-void board::initialize(int newSize) {
+int board::initialize(int newSize) {
+	if (newSize < 2 || newSize % 2)
+		return 0;
 	if (plane != NULL)
 		cleanUp();
 	size = newSize;
@@ -45,6 +47,7 @@ void board::initialize(int newSize) {
 			plane[i][j].state = S_UNSET;
 		}
 	}
+	return 1;
 }
 
 
@@ -62,6 +65,8 @@ void board::randomize(){
 			plane[i][j].editable = true;
 		}
 	int howMany = size*size*(rand() % (MAX_RAND_THRESHOLD - MIN_RAND_THRESHOLD) + MIN_RAND_THRESHOLD) / 100.0;
+	if (!howMany)	//Dla ma³ych plansz kiedy zaokraglona wartoœæ jest równa 0.
+		howMany++;
 	int count = 0; states state; coords relative;
 	for (int i = 0; i < pow(size, 4); i++) {
 		state = rand() % 2 ? S_ONE : S_ZERO;
@@ -72,13 +77,58 @@ void board::randomize(){
 		if (count == howMany)
 			break;
 	}
-	textbackground(BLUE);
+	textbackground(DEF_BG_COLOR);
 	clrscr();
-	show(DARKGRAY);
+
 }
 
 void board::resize() {
-
+	clrscr();
+	drawBorder(INPUT_WINDOW_ORIGIN_X, INPUT_WINDOW_ORIGIN_Y, INPUT_WINDOW_WIDTH, INPUT_WINDOW_HEIGHT, WHITE);
+	gotoxy(INPUT_WINDOW_ORIGIN_X + 1, INPUT_WINDOW_ORIGIN_Y + 1);
+	cputs("Podaj nowy rozmiar planszy: ");
+	char number[9];
+	char digit[2];
+	digit[1] = '\0';
+	int counter = 0;
+	while (true) {
+		digit[0] = getch();
+		if ('0' <= digit[0] && digit[0] <= '9' && counter < 8) {
+			number[counter] = digit[0];
+			counter++;
+			cputs(digit);
+		}
+		if (digit[0] == 13) // Je¿eli wciœniêto enter.
+			break;
+		if (digit[0] == 8 && counter > 0) { // Umo¿liwia cofanie wprowadzenia. kod ascii BackSpace.
+			counter--;
+			number[counter] = 0;
+			gotoxy(wherex() - 1, wherey());
+			cputs(" ");
+			gotoxy(wherex() - 1, wherey());
+		}
+	}
+	textbackground(DEF_BG_COLOR);
+	clrscr();
+	gotoxy(1, 1);
+	number[counter] = '\0';
+	int newSize = atoi(number);
+	if (initialize(newSize)) {
+		char buff[256];
+		sprintf(buff, "%i.map", newSize);
+		if (loadMap(this, buff)) {
+			cputs(" Wczytano mape z pliku.");
+		}
+		else {
+			randomize();
+			gotoxy(1, 1);
+			cputs("Stworzono losowa mape.");
+		}
+	}
+	else {
+		cputs("Podano niewlasciwy rozmiar.");
+	}
+	gotoxy(originPoint.x + 1, originPoint.y + 1);
 }
 
 

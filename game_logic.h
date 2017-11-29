@@ -4,7 +4,7 @@
 #include<stdio.h>
 
 #define DEFAULT_SIZE 8
-#define ORIGIN_X 50
+#define ORIGIN_X 40
 #define ORIGIN_Y 2
 #define NULL 0
 #define MIN_RAND_THRESHOLD 20
@@ -53,8 +53,14 @@ struct board {
 	int size = DEFAULT_SIZE;
 	field** plane = NULL;
 
-	void initialize(int newSize);
+	/*Zwraca 1 je¿eli podano odpowiedni rozmiar,
+	Zwraca 0 w przeciwnym wypadku*/
+	int initialize(int newSize);
+
+	/*Pobiera liczbê od u¿ytkownika i próbuje utworzyæ now¹ planszê w kolejnoœci plik, losowanie.*/
 	void resize();
+
+	/*Zwalnia pamiêæ zajmowan¹ przez plansze i ustawia wskaŸnik na NULL*/
 	void cleanUp();
 
 	void show(int color);

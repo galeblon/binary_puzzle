@@ -43,7 +43,7 @@ void drawLegend(coords global, int color) {
 	gotoxy(x, ++y);
 	cputs("nr. indeksu 171600");
 	gotoxy(x, ++y);
-	cputs("abcdefgh");
+	cputs("abcdefghi");
 	gotoxy(x, ++y);
 	cputs("esc - wyjscie");
 	gotoxy(x, ++y);

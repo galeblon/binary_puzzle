@@ -15,11 +15,9 @@ int main() {
 	coords relative_c;
 	coords legend_c;
 
-	global_c.x = gameBoard.originPoint.x + 1;
-	global_c.y = gameBoard.originPoint.y + 1;
+	global_c.setCoord(gameBoard.originPoint.x + 1, gameBoard.originPoint.y + 1);
+	legend_c.setCoord(L_ORIGIN_X, L_ORIGIN_Y);
 
-	legend_c.x = L_ORIGIN_X;
-	legend_c.y = L_ORIGIN_Y;
 
 	gameBoard.show(DARKGRAY);
 	settitle("Adrian Misiak 171600");
@@ -33,9 +31,11 @@ int main() {
 		textbackground(DEF_BG_COLOR);
 		clrscr();
 		switch (action) {
-			case NEW_GAME: loadMap(&gameBoard, "default.txt"); break;
+			case NEW_GAME: loadMap(&gameBoard, "default.map"); break;
 			case RANDOMIZE_BOARD: gameBoard.randomize(); break;
-			case RESIZE_BOARD: gameBoard.resize(); break;
+			case RESIZE_BOARD: gameBoard.resize(); 
+				global_c.setCoord(gameBoard.originPoint.x + 1, gameBoard.originPoint.y + 1);
+				break;
 			case SIMPLE_TIP: simpleTipToggle = simpleTipToggle ? false : true; break;
 			case MOVE_UP: move(UP, &global_c, &gameBoard); break;
 			case MOVE_DOWN: move(DOWN, &global_c, &gameBoard); break;

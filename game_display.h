@@ -12,6 +12,10 @@
 #define T_WIDTH 32
 #define T_HEIGHT 8
 #define DEF_BG_COLOR 1
+#define INPUT_WINDOW_ORIGIN_X 10
+#define INPUT_WINDOW_ORIGIN_Y 4
+#define INPUT_WINDOW_WIDTH 40
+#define INPUT_WINDOW_HEIGHT 3
 
 /*Wyœwietla obramowanie w podanych wspó³rzêdnych o podanych wymiarach i kolorze*/
 void drawBorder(int x, int y, int size_w, int size_h, int color);
