@@ -31,32 +31,32 @@ void board::show(int color) {
 	textbackground(BLUE);
 }
 
-
 void drawLegend(coords global, int color) {
 	int x = global.x;
 	int y = global.y;
 	drawBorder(x, y, L_WIDTH, L_HEIGHT, color);
 	textbackground(BLACK);
-	x++; y++;
+	global.x = ++x; global.y = ++y;
 	gotoxy(x, y);
-	cputs("Adrian Misiak");
-	gotoxy(x, ++y);
-	cputs("nr. indeksu 171600");
-	gotoxy(x, ++y);
-	cputs("abcdefghi");
-	gotoxy(x, ++y);
-	cputs("esc - wyjscie");
-	gotoxy(x, ++y);
-	cputs("n - nowa gra");
-	gotoxy(x, ++y);
-	cputs("o - losowe wypelnienie");
-	gotoxy(x, ++y);
-	cputs("p - prosta podpowiedz");
-	gotoxy(x, ++y);
-	cputs("r - zmiana rozmiaru");
+	putTextLine(&global, "Adrian Misiak");
+	putTextLine(&global, "nr. indeksu 171600");
+	putTextLine(&global, "abcdefghi");
+	putTextLine(&global, "esc - wyjscie");
+	putTextLine(&global, "n - nowa gra");
+	putTextLine(&global, "o - losowe wypelnienie");
+	putTextLine(&global, "p - prosta podpowiedz");
+	putTextLine(&global, "r - zmiana rozmiaru");
+	putTextLine(&global, "k - sprawdz sprzecznosc");
 	textbackground(DEF_BG_COLOR);
 
 }
+void putTextLine(coords *global, char *str) {
+	cputs(str);
+	global->y += 1;
+	gotoxy(global->x, global->y);
+}
+
+
 char drawTipFor(int rel_x, int rel_y, int* x, int* y, const board* gameBoard, states state) {
 	char buff[2];
 	buff[0] = state == S_ZERO ? '0' : '1';
@@ -169,12 +169,15 @@ void drawBorder(int x, int y, int size_w, int size_h, int color) {
 }
 
 void showErrMsg(int x, int y, const char* str) {
+	_setcursortype(_NOCURSOR);
 	static int inc;
 	gotoxy(x, y+inc);
 	textbackground(WHITE);
 	textcolor(LIGHTRED);
 	cputs(str);
-	textbackground(BLACK);
+	textbackground(DEF_BG_COLOR);
 	textcolor(LIGHTGRAY);
 	inc = (inc + 1) % 2;
+	_setcursortype(_SOLIDCURSOR);
+	getch();
 }

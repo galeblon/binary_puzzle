@@ -6,7 +6,7 @@
 #include<cstdlib>
 
 #define L_WIDTH 25
-#define L_HEIGHT 10
+#define L_HEIGHT 15
 #define L_ORIGIN_X 2
 #define L_ORIGIN_Y 2
 #define T_WIDTH 32
@@ -23,6 +23,9 @@ void drawBorder(int x, int y, int size_w, int size_h, int color);
 /*Wyœwietla okno z legend¹ w miejscu o wspó³rzêdnych x,y.
 kolor obramowania podany w parametrze color.*/
 void drawLegend(coords global, int color);
+
+/*Umieszcza tekst w podanych wspolrzednych i przechodzi do nowej linii.*/
+void putTextLine(coords *global, char *str);
 
 /*Wyœwietla okno z prostymi podpowiedziami*/
 void drawSimpleTip(coords global, coords relative, const board* gameBoard, int color);

@@ -1,5 +1,6 @@
 #include"game_logic.h"
 #include"game_display.h"
+#include"conio2.h"
 #include<stdlib.h>
 #include<time.h>
 #include<math.h>
@@ -21,20 +22,29 @@ actions getAction() {
 	else if (keyAction == 'r') return RESIZE_BOARD;
 	else if (keyAction == 0x1B) return QUIT_GAME;
 	else if (keyAction == 'p') return SIMPLE_TIP;
+	else if (keyAction == 'k') return SHOW_CONTRADICTION;
 	return UNDEFINED_ACTION;
 }
 
 
-coords globalToRelative(coords global, const board &gameBoard) {
+coords globalToRelative(coords global, const board *gameBoard) {
 	coords relative;
-	relative.x = global.x - gameBoard.originPoint.x - 1;
-	relative.y = global.y - gameBoard.originPoint.y - 1;
+	relative.x = global.x - gameBoard->originPoint.x - 1;
+	relative.y = global.y - gameBoard->originPoint.y - 1;
 	return relative;
 }
-
+coords relativeToGlobal(coords relative, const board *gameBoard) {
+	coords global;
+	global.x =  relative.x + gameBoard->originPoint.x + 1;
+	global.y = relative.y + gameBoard->originPoint.y + 1;
+	return global;
+}
 
 int board::initialize(int newSize) {
-	if (newSize < 2 || newSize % 2)
+	text_info info;
+	gettextinfo(&info);
+	int maxSize = info.screenheight - 2 - ORIGIN_Y;
+	if (newSize < 2 || newSize % 2 || newSize >= maxSize)
 		return 0;
 	if (plane != NULL)
 		cleanUp();
@@ -72,7 +82,7 @@ void board::randomize(){
 		state = rand() % 2 ? S_ONE : S_ZERO;
 		relative.x = rand() % size;
 		relative.y = rand() % size;
-		if (setField(relative, this, state, false))
+		if (setField(relative, this, state, false, false))
 			count++;
 		if (count == howMany)
 			break;
@@ -116,7 +126,7 @@ void board::resize() {
 	if (initialize(newSize)) {
 		char buff[256];
 		sprintf(buff, "%i.map", newSize);
-		if (loadMap(this, buff)) {
+		if (loadMap(this, buff, false)) {
 			cputs(" Wczytano mape z pliku.");
 		}
 		else {
@@ -163,7 +173,7 @@ void move(directions direction, coords* global, const board* gameBoard) {
 }
 
 
-int setField(coords relative, const board* gameBoard, states state, bool editable) {
+int setField(coords relative, const board* gameBoard, states state, bool editable, bool showError) {
 	int x = relative.x;
 	int y = relative.y;
 	if (gameBoard->plane[y][x].editable == true) {
@@ -176,21 +186,21 @@ int setField(coords relative, const board* gameBoard, states state, bool editabl
 					gameBoard->plane[y][x].editable = editable;
 					return 1;
 				}
-				else {
+				else if(showError){
 					showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Zasada 3 zlamana.");
 					return 0;
 				}
 			}
-			else {
+			else if (showError){
 				showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Zasada 2 zlamana.");
 				return 0;
 			}
-		}		else {
+		}		else if (showError){
 			showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Zasada 1 zlamana.");
 			return 0;
 		}
 	}
-	else {
+	else if (showError){
 		showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Nie mozna zmieniac wartosci pola stalego.");
 		return 0;
 	}
@@ -278,7 +288,7 @@ int checkRule3(const board* gameBoard, int x, int y, states state) {
 }
 
 
-int loadMap(board* gameBoard, const char* fName) {
+int loadMap(board* gameBoard, const char* fName, bool showError) {
 	FILE *fpointer;
 	char path[256];
 	sprintf(path, "map\\%s", fName);
@@ -311,14 +321,14 @@ int loadMap(board* gameBoard, const char* fName) {
 						return 0;
 					}
 					if (val == '1') {
-						if (!(setField(relative, gameBoard, S_ONE, false))) {
-							showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
+						if (!(setField(relative, gameBoard, S_ONE, false, false))) {
+							if(showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
 							return 0;
 						}
 					}
 					else if (val == '0') {
-						if (!(setField(relative, gameBoard, S_ZERO, false))) {
-							showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
+						if (!(setField(relative, gameBoard, S_ZERO, false, false))) {
+							if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
 							return 0;
 						}
 					}
@@ -332,7 +342,33 @@ int loadMap(board* gameBoard, const char* fName) {
 	return 1;
 	}
 	else {
-		showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size+2, "Blad z otwarciem pliku.");
+		if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size+2, "Blad z otwarciem pliku.");
 		return 0;
 	}
+}
+
+
+void showContradiction(const board* gameBoard) {
+	_setcursortype(_NOCURSOR);
+	coords relative;
+	coords global;
+	for (int i = 0; i < gameBoard->size; i++) {
+		for (int j = 0; j < gameBoard->size; j++) {
+			if(!checkRule1(gameBoard, j, i, S_ZERO) 
+				|| checkRule2(gameBoard, j, i, S_ZERO)
+				|| checkRule3(gameBoard, j, i, S_ZERO))
+				if (!checkRule1(gameBoard, j, i, S_ONE)
+					|| checkRule2(gameBoard, j, i, S_ONE)
+					|| checkRule3(gameBoard, j, i, S_ONE)) {
+					relative.setCoord(j, i);
+					global = relativeToGlobal(relative, gameBoard);
+					gotoxy(global.x, global.y);
+					textbackground(RED);
+					cputs(" ");
+					textbackground(DEF_BG_COLOR);
+				}
+		}
+	}
+	getch();
+	_setcursortype(_SOLIDCURSOR);
 }

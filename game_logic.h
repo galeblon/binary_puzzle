@@ -35,6 +35,7 @@ enum actions {
 	SET_FIELD_1,
 	SET_FIELD_0,
 	UNSET_FIELD,
+	SHOW_CONTRADICTION,
 	UNDEFINED_ACTION
 };
 struct field {
@@ -44,7 +45,7 @@ struct field {
 struct coords {
 	int x = 0;
 	int y = 0;
-	int setCoord(int a, int b) { if ((x = a) && (y = b)) return 0; return 1; };
+	void setCoord(int a, int b) { x = a; y = b; };
 };
 
 
@@ -68,12 +69,13 @@ struct board {
 };
 
 actions getAction();
-coords globalToRelative(coords global, const board &gameBoard);
+coords globalToRelative(coords global, const board *gameBoard);
+coords relativeToGlobal(coords relative, const board *gameBoard);
 void move(directions direction, coords* global, const board* gameBoard);
 
 /*Próbuje wstawiæ do planszy pole o odpowiednim stanie, sprawdzaj¹c przy tym zasady gry.
 Zwraca 1 w przypadku powodzenia, Zwraca 0 i wyœwietla odpowiedni komunikat w przypadku b³êdu.*/
-int setField(coords relative, const board* gameBoard, states state, bool editable);
+int setField(coords relative, const board* gameBoard, states state, bool editable, bool showError);
 
 /*Sprawdza czy wprowadzenie danego stanu do komórki o podanych wspó³rzêdnych ³ama³oby zasade mówi¹c¹ o tym ¿e 
 maksymalnie 2 liczby o tym samym stanie mog¹ ze sob¹ s¹siadowaæ w danym wierszu lub kolumnie.
@@ -95,6 +97,9 @@ int checkRule3(const board* gameBoard, int x, int y, states state);
 
 /*Próbuje wczytaæ mapê z pliku o nazwie przekazanej do parametru do planszy przekazanej do parametru.
 Zwraca 1 w przypadku powodzenia, Zwraca 0 i wyœwietla odpowiedni komunikat w przypadku b³êdu.*/
-int loadMap(board* gameBoard, const char* fName);
+int loadMap(board* gameBoard, const char* fName, bool showError);
+
+/*Przechodzi przez plansze i podswietla punkty w ktorych nie mo¿na nic wpisaæ.*/
+void showContradiction(const board* gameBoard);
 
 #endif 

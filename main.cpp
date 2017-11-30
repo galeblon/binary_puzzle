@@ -4,6 +4,8 @@
 #include"game_logic.h"
 
 int main() {
+	_setcursortype(_SOLIDCURSOR);
+
 	actions action;
 	bool simpleTipToggle = false;
 	textbackground(BLUE);
@@ -24,27 +26,28 @@ int main() {
 	do {
 		drawLegend(legend_c, YELLOW);
 		gameBoard.show(DARKGRAY);
-		relative_c = globalToRelative(global_c, gameBoard);
+		relative_c = globalToRelative(global_c, &gameBoard);
 		if (simpleTipToggle) drawSimpleTip(legend_c, relative_c, &gameBoard, WHITE);
 		gotoxy(global_c.x, global_c.y);
 		action = getAction();
 		textbackground(DEF_BG_COLOR);
-		clrscr();
 		switch (action) {
-			case NEW_GAME: loadMap(&gameBoard, "default.map"); break;
+			case NEW_GAME: loadMap(&gameBoard, "default.map", false); break;
 			case RANDOMIZE_BOARD: gameBoard.randomize(); break;
 			case RESIZE_BOARD: gameBoard.resize(); 
 				global_c.setCoord(gameBoard.originPoint.x + 1, gameBoard.originPoint.y + 1);
 				break;
 			case SIMPLE_TIP: simpleTipToggle = simpleTipToggle ? false : true; break;
+			case SHOW_CONTRADICTION: showContradiction(&gameBoard); break;
 			case MOVE_UP: move(UP, &global_c, &gameBoard); break;
 			case MOVE_DOWN: move(DOWN, &global_c, &gameBoard); break;
 			case MOVE_LEFT: move(LEFT, &global_c, &gameBoard); break;
 			case MOVE_RIGHT: move(RIGHT, &global_c, &gameBoard); break;
-			case SET_FIELD_1: setField(relative_c, &gameBoard, S_ONE, true); break;
-			case SET_FIELD_0: setField(relative_c, &gameBoard, S_ZERO, true); break;
-			case UNSET_FIELD: setField(relative_c, &gameBoard, S_UNSET, true); break;
+			case SET_FIELD_1: setField(relative_c, &gameBoard, S_ONE, true, true); break;
+			case SET_FIELD_0: setField(relative_c, &gameBoard, S_ZERO, true, true); break;
+			case UNSET_FIELD: setField(relative_c, &gameBoard, S_UNSET, true, true); break;
 			}
+			clrscr();
 	} while (action != QUIT_GAME);
 	gameBoard.cleanUp();
 	return 0;
