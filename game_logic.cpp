@@ -6,6 +6,7 @@
 #include<math.h>
 
 actions getAction() {
+	_setcursortype(_SOLIDCURSOR);
 	char keyAction = getch();
 	if (!keyAction) {
 		keyAction = getch();
@@ -22,10 +23,35 @@ actions getAction() {
 	else if (keyAction == 'r') return RESIZE_BOARD;
 	else if (keyAction == 0x1B) return QUIT_GAME;
 	else if (keyAction == 'p') return SIMPLE_TIP;
-	else if (keyAction == 'k') return SHOW_CONTRADICTION;
+	else if (keyAction == 'k') return CHECK_CONTRADICTION;
+	else if (keyAction == 'd') return RULE2_COUNTER;
+	else if (keyAction == 'a') return AUTO_MODE;
 	return UNDEFINED_ACTION;
 }
 
+void parseAction(board &gameBoard, actions action, coords& global_c, flags& gameFlags) {
+	_setcursortype(_NOCURSOR);
+	coords relative_c = globalToRelative(global_c, &gameBoard);
+	switch (action) {
+	case NEW_GAME: loadMap(&gameBoard, "default.map", false); break;
+	case RANDOMIZE_BOARD: gameBoard.randomize(); break;
+	case RESIZE_BOARD: gameBoard.resize();
+		global_c.setCoord(gameBoard.originPoint.x + 1, gameBoard.originPoint.y + 1);
+		break;
+	case SIMPLE_TIP: gameFlags.simpleTipToggle = !gameFlags.simpleTipToggle; break;
+	case CHECK_CONTRADICTION: checkContradiction(&gameBoard, true); break;
+	case RULE2_COUNTER: gameFlags.rule2CountToggle = !gameFlags.rule2CountToggle; break;
+	case AUTO_MODE: gameFlags.autoMode = !gameFlags.autoMode; break;
+	case MOVE_UP: move(UP, &global_c, &gameBoard); break;
+	case MOVE_DOWN: move(DOWN, &global_c, &gameBoard); break;
+	case MOVE_LEFT: move(LEFT, &global_c, &gameBoard); break;
+	case MOVE_RIGHT: move(RIGHT, &global_c, &gameBoard); break;
+	case SET_FIELD_1: setField(relative_c, &gameBoard, S_ONE, true, true); break;
+	case SET_FIELD_0: setField(relative_c, &gameBoard, S_ZERO, true, true); break;
+	case UNSET_FIELD: setField(relative_c, &gameBoard, S_UNSET, true, true); break;
+	}
+	_setcursortype(_SOLIDCURSOR);
+}
 
 coords globalToRelative(coords global, const board *gameBoard) {
 	coords relative;
@@ -43,8 +69,10 @@ coords relativeToGlobal(coords relative, const board *gameBoard) {
 int board::initialize(int newSize) {
 	text_info info;
 	gettextinfo(&info);
-	int maxSize = info.screenheight - 2 - ORIGIN_Y;
-	if (newSize < 2 || newSize % 2 || newSize >= maxSize)
+	int maxSize2 = info.screenwidth - 2 - (ORIGIN_X-1);	// Liczenie dwóch granic, jedna ze wzglêdu na szerokoœæ a druga wysokoœc okna, brana pod uwagê bedziê wartoœæ mniejsza.
+	int maxSize = info.screenheight - 2 - (ORIGIN_Y-1) - 2; //Wliczenie obramowania, punktu pocz¹tku oraz dwóch wierszy dla wyœwietlania zliczania jedynek i zer
+	maxSize = maxSize < maxSize2 ? maxSize : maxSize2;
+	if (newSize < 2 || newSize % 2 || newSize > maxSize)
 		return 0;
 	if (plane != NULL)
 		cleanUp();
@@ -93,35 +121,9 @@ void board::randomize(){
 }
 
 void board::resize() {
-	clrscr();
-	drawBorder(INPUT_WINDOW_ORIGIN_X, INPUT_WINDOW_ORIGIN_Y, INPUT_WINDOW_WIDTH, INPUT_WINDOW_HEIGHT, WHITE);
-	gotoxy(INPUT_WINDOW_ORIGIN_X + 1, INPUT_WINDOW_ORIGIN_Y + 1);
-	cputs("Podaj nowy rozmiar planszy: ");
-	char number[9];
-	char digit[2];
-	digit[1] = '\0';
-	int counter = 0;
-	while (true) {
-		digit[0] = getch();
-		if ('0' <= digit[0] && digit[0] <= '9' && counter < 8) {
-			number[counter] = digit[0];
-			counter++;
-			cputs(digit);
-		}
-		if (digit[0] == 13) // Je¿eli wciœniêto enter.
-			break;
-		if (digit[0] == 8 && counter > 0) { // Umo¿liwia cofanie wprowadzenia. kod ascii BackSpace.
-			counter--;
-			number[counter] = 0;
-			gotoxy(wherex() - 1, wherey());
-			cputs(" ");
-			gotoxy(wherex() - 1, wherey());
-		}
-	}
-	textbackground(DEF_BG_COLOR);
-	clrscr();
+	char number[9]; 
+	getInput("Podaj nowy rozmiar: ", number, true);
 	gotoxy(1, 1);
-	number[counter] = '\0';
 	int newSize = atoi(number);
 	if (initialize(newSize)) {
 		char buff[256];
@@ -138,6 +140,7 @@ void board::resize() {
 	else {
 		cputs("Podano niewlasciwy rozmiar.");
 	}
+	getch();
 	gotoxy(originPoint.x + 1, originPoint.y + 1);
 }
 
@@ -244,14 +247,8 @@ bool checkRule1(const board* gameBoard, int x, int y, states state) {
 int checkRule2(const board* gameBoard, int x, int y, states state) {
 	if (state == S_UNSET)
 		return 0;
-	int count_row = 1;
-	int count_col = 1;
-	for (int i = 0; i < gameBoard->size; i++) {
-		if (gameBoard->plane[y][i].state == state)
-			count_row++;
-		if (gameBoard->plane[i][x].state == state)
-			count_col++;
-	}
+	int count_row = 1 + countInRow(gameBoard, y, state);
+	int count_col = 1 + countInCol(gameBoard, x, state);
 	if (count_row > (gameBoard->size / 2))
 		return 1;
 	if (count_col > (gameBoard->size / 2))
@@ -259,6 +256,21 @@ int checkRule2(const board* gameBoard, int x, int y, states state) {
 	return 0;
 }
 
+int countInRow(const board* gameBoard, int row, states state) {
+	int count = 0;
+	for (int i = 0; i < gameBoard->size; i++)
+		if (gameBoard->plane[row][i].state == state)
+			count++;
+	return count;
+}
+
+int countInCol(const board* gameBoard, int col, states state) {
+	int count = 0;
+	for (int i = 0; i < gameBoard->size; i++)
+		if (gameBoard->plane[i][col].state == state)
+			count++;
+	return count;
+}
 
 int checkRule3(const board* gameBoard, int x, int y, states state) {
 	if (state == S_UNSET)
@@ -348,7 +360,7 @@ int loadMap(board* gameBoard, const char* fName, bool showError) {
 }
 
 
-void showContradiction(const board* gameBoard) {
+int checkContradiction(const board* gameBoard, bool visible) {
 	_setcursortype(_NOCURSOR);
 	coords relative;
 	coords global;
@@ -361,6 +373,8 @@ void showContradiction(const board* gameBoard) {
 					|| checkRule2(gameBoard, j, i, S_ONE)
 					|| checkRule3(gameBoard, j, i, S_ONE)) {
 					relative.setCoord(j, i);
+					if (!visible)
+						return 1;
 					global = relativeToGlobal(relative, gameBoard);
 					gotoxy(global.x, global.y);
 					textbackground(RED);
@@ -369,6 +383,7 @@ void showContradiction(const board* gameBoard) {
 				}
 		}
 	}
-	getch();
+	if(visible)getch();
 	_setcursortype(_SOLIDCURSOR);
+	return 0;
 }

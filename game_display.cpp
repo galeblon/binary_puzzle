@@ -31,7 +31,7 @@ void board::show(int color) {
 	textbackground(BLUE);
 }
 
-void drawLegend(coords global, int color) {
+void drawLegend(coords global, int color, flags& gameFlags) {
 	int x = global.x;
 	int y = global.y;
 	drawBorder(x, y, L_WIDTH, L_HEIGHT, color);
@@ -40,22 +40,35 @@ void drawLegend(coords global, int color) {
 	gotoxy(x, y);
 	putTextLine(&global, "Adrian Misiak");
 	putTextLine(&global, "nr. indeksu 171600");
-	putTextLine(&global, "abcdefghi");
+	putTextLine(&global, "abcdefghijk");
 	putTextLine(&global, "esc - wyjscie");
 	putTextLine(&global, "n - nowa gra");
 	putTextLine(&global, "o - losowe wypelnienie");
-	putTextLine(&global, "p - prosta podpowiedz");
+	putTextByFlag(&global, gameFlags.simpleTipToggle, "p", "  - prosta podpowiedz");
 	putTextLine(&global, "r - zmiana rozmiaru");
 	putTextLine(&global, "k - sprawdz sprzecznosc");
+	putTextByFlag(&global, gameFlags.rule2CountToggle, "d", "  - licznik reguly 2");
+	putTextByFlag(&global, gameFlags.autoMode, "a", "  - detekcja konca gry");
 	textbackground(DEF_BG_COLOR);
 
 }
+
+
 void putTextLine(coords *global, char *str) {
 	cputs(str);
 	global->y += 1;
 	gotoxy(global->x, global->y);
 }
 
+
+void putTextByFlag(coords *global, bool flag, char* button, char* body) {
+	putTextLine(global, body);
+	gotoxy(global->x, global->y - 1);
+	if (flag) textbackground(YELLOW);
+	cputs(button);
+	gotoxy(global->x, global->y);
+	textbackground(BLACK);
+}
 
 char drawTipFor(int rel_x, int rel_y, int* x, int* y, const board* gameBoard, states state) {
 	char buff[2];
@@ -131,6 +144,55 @@ void drawSimpleTip(coords global, coords relative, const board* gameBoard, int c
 	textbackground(DEF_BG_COLOR);
 }
 
+void drawRule2Counter(const board* gameBoard) {
+	char buff[256];
+	int x = gameBoard->originPoint.x-2; // Wziêcie pod uwagê ramki pola
+	int y = gameBoard->originPoint.y;
+	gotoxy(x, y);
+	textbackground(BROWN);
+	cputs("10");
+	gotoxy(x, ++y);
+	for (int i = 0; i < gameBoard->size; i++) {
+		int row_one = countInRow(gameBoard, i, S_ONE);
+		int row_zero = countInRow(gameBoard, i, S_ZERO);
+		itoa(row_one, buff, 10);
+		textbackground(GREEN);
+		if (row_one == gameBoard->size / 2) textbackground(RED);
+		cputs(buff);
+		itoa(row_zero, buff, 10);
+		textbackground(LIGHTBLUE);
+		if (row_zero == gameBoard->size / 2) textbackground(RED);
+		cputs(buff);
+		gotoxy(x, ++y);
+	}
+
+	x = gameBoard->originPoint.x;
+	y = gameBoard->originPoint.y + gameBoard->size + 2;
+	gotoxy(x, y);
+	textbackground(BROWN);
+	cputs("1");
+	for (int i = 0; i < gameBoard->size; i++) {
+		int col_one = countInCol(gameBoard, i, S_ONE);
+		itoa(col_one, buff, 10);
+		textbackground(GREEN);
+		if (col_one == gameBoard->size / 2) textbackground(RED);
+		cputs(buff);
+	}
+	gotoxy(x, ++y);
+	textbackground(BROWN);
+	cputs("0");
+	for (int i = 0; i < gameBoard->size; i++) {
+		int col_zero = countInCol(gameBoard, i, S_ZERO);
+		itoa(col_zero, buff, 10);
+		textbackground(LIGHTBLUE);
+		if(col_zero == gameBoard->size/2) textbackground(RED);
+		cputs(buff);
+	}
+	textbackground(DEF_BG_COLOR);
+}
+
+
+
 void drawBorder(int x, int y, int size_w, int size_h, int color) {
 	textbackground(BLACK);
 	int tmp_y = y;
@@ -178,6 +240,66 @@ void showErrMsg(int x, int y, const char* str) {
 	textbackground(DEF_BG_COLOR);
 	textcolor(LIGHTGRAY);
 	inc = (inc + 1) % 2;
-	_setcursortype(_SOLIDCURSOR);
 	getch();
+	_setcursortype(_SOLIDCURSOR);
+}
+
+void drawGameScreen(flags& gameFlags, board& gameBoard, coords legend_c, coords global_c) {
+	_setcursortype(_NOCURSOR);
+	drawLegend(legend_c, YELLOW, gameFlags);
+	gameBoard.show(DARKGRAY);
+	if (gameFlags.simpleTipToggle) drawSimpleTip(legend_c, globalToRelative(global_c, &gameBoard), &gameBoard, WHITE);
+	if (gameFlags.rule2CountToggle) drawRule2Counter(&gameBoard);
+	if (gameFlags.autoMode) showIfSolvable(&gameBoard);
+	_setcursortype(_SOLIDCURSOR);
+}
+
+void showIfSolvable(const board* gameBoard) {
+	if (checkContradiction(gameBoard, false)) {
+		textbackground(WHITE);
+		textcolor(RED);
+		coords global;
+		global.setCoord(gameBoard->originPoint.x, gameBoard->originPoint.y);
+		gotoxy(global.x, global.y);
+		putTextLine(&global, "Gry nie mozna ukonczyc.");
+		textbackground(DEF_BG_COLOR);
+		textcolor(BLACK);
+	}
+}
+
+void getInput(char* query, char* res, bool numerical) {
+	clrscr();
+	drawBorder(INPUT_WINDOW_ORIGIN_X, INPUT_WINDOW_ORIGIN_Y, INPUT_WINDOW_WIDTH, INPUT_WINDOW_HEIGHT, WHITE);
+	gotoxy(INPUT_WINDOW_ORIGIN_X + 1, INPUT_WINDOW_ORIGIN_Y + 1);
+	cputs(query);
+	char digit[2];
+	digit[1] = '\0';
+	int counter = 0;
+	while (true) {
+		digit[0] = getch();
+		if (numerical) {
+			if ('0' <= digit[0] && digit[0] <= '9' && counter < 8) {
+				res[counter] = digit[0];
+				counter++;
+				cputs(digit);
+			}
+		}
+		else if('0'<= digit[0] &&  digit[0]<'z' && counter < 8){
+			res[counter] = digit[0];
+			counter++;
+			cputs(digit);
+		}
+		if(digit[0] == 13) // Je¿eli wciœniêto enter.
+			break;
+		if (digit[0] == 8 && counter > 0) { // Umo¿liwia cofanie wprowadzenia. kod ascii BackSpace.
+			counter--;
+			res[counter] = 0;
+			gotoxy(wherex() - 1, wherey());
+			cputs(" ");
+			gotoxy(wherex() - 1, wherey());
+		}
+	}
+	textbackground(DEF_BG_COLOR);
+	clrscr();
+	res[counter] = '\0';
 }

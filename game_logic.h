@@ -28,6 +28,8 @@ enum actions {
 	RANDOMIZE_BOARD,
 	RESIZE_BOARD,
 	SIMPLE_TIP,
+	RULE2_COUNTER,
+	AUTO_MODE,
 	MOVE_UP,
 	MOVE_DOWN,
 	MOVE_LEFT,
@@ -35,8 +37,13 @@ enum actions {
 	SET_FIELD_1,
 	SET_FIELD_0,
 	UNSET_FIELD,
-	SHOW_CONTRADICTION,
+	CHECK_CONTRADICTION,
 	UNDEFINED_ACTION
+};
+struct flags{
+	bool simpleTipToggle = false;
+	bool rule2CountToggle = false;
+	bool autoMode = false;
 };
 struct field {
 	states state;
@@ -68,7 +75,13 @@ struct board {
 	void randomize();
 };
 
+
+/*Odczytuje klawisz i zwraca akcje przypisan¹ do niego.*/
 actions getAction();
+
+/*Wybiera odpowiedni¹ funkcjê do podanej akcji.*/
+void parseAction(board &gameBoard, actions action, coords& global_c, flags& gameFlags);
+
 coords globalToRelative(coords global, const board *gameBoard);
 coords relativeToGlobal(coords relative, const board *gameBoard);
 void move(directions direction, coords* global, const board* gameBoard);
@@ -99,7 +112,14 @@ int checkRule3(const board* gameBoard, int x, int y, states state);
 Zwraca 1 w przypadku powodzenia, Zwraca 0 i wyœwietla odpowiedni komunikat w przypadku b³êdu.*/
 int loadMap(board* gameBoard, const char* fName, bool showError);
 
-/*Przechodzi przez plansze i podswietla punkty w ktorych nie mo¿na nic wpisaæ.*/
-void showContradiction(const board* gameBoard);
+/*Przechodzi przez plansze i podswietla punkty w ktorych nie mo¿na nic wpisaæ.
+Zwraca 1 je¿eli znajdzie siê pole sprzeczne.*/
+int checkContradiction(const board* gameBoard, bool visible);
+
+/*Zwraca iloœæ pól wystêpuj¹cych w danym wierszy o danej wartoœci.*/
+int countInRow(const board* gameBoard, int row, states state);
+
+/*Zwraca iloœæ pól wystêpuj¹cych w danej kolumnie o danej wartoœci.*/
+int countInCol(const board* gameBoard, int col, states state);
 
 #endif 

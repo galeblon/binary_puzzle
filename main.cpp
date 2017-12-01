@@ -5,49 +5,27 @@
 
 int main() {
 	_setcursortype(_SOLIDCURSOR);
+	textbackground(DEF_BG_COLOR);
 
 	actions action;
-	bool simpleTipToggle = false;
-	textbackground(BLUE);
+	flags gameFlags;
 	clrscr();
 
 	board gameBoard;
 	gameBoard.initialize(DEFAULT_SIZE);
 	coords global_c;
-	coords relative_c;
 	coords legend_c;
 
 	global_c.setCoord(gameBoard.originPoint.x + 1, gameBoard.originPoint.y + 1);
 	legend_c.setCoord(L_ORIGIN_X, L_ORIGIN_Y);
 
-
-	gameBoard.show(DARKGRAY);
 	settitle("Adrian Misiak 171600");
 	do {
-		drawLegend(legend_c, YELLOW);
-		gameBoard.show(DARKGRAY);
-		relative_c = globalToRelative(global_c, &gameBoard);
-		if (simpleTipToggle) drawSimpleTip(legend_c, relative_c, &gameBoard, WHITE);
+		drawGameScreen(gameFlags, gameBoard, legend_c, global_c);
 		gotoxy(global_c.x, global_c.y);
 		action = getAction();
-		textbackground(DEF_BG_COLOR);
-		switch (action) {
-			case NEW_GAME: loadMap(&gameBoard, "default.map", false); break;
-			case RANDOMIZE_BOARD: gameBoard.randomize(); break;
-			case RESIZE_BOARD: gameBoard.resize(); 
-				global_c.setCoord(gameBoard.originPoint.x + 1, gameBoard.originPoint.y + 1);
-				break;
-			case SIMPLE_TIP: simpleTipToggle = simpleTipToggle ? false : true; break;
-			case SHOW_CONTRADICTION: showContradiction(&gameBoard); break;
-			case MOVE_UP: move(UP, &global_c, &gameBoard); break;
-			case MOVE_DOWN: move(DOWN, &global_c, &gameBoard); break;
-			case MOVE_LEFT: move(LEFT, &global_c, &gameBoard); break;
-			case MOVE_RIGHT: move(RIGHT, &global_c, &gameBoard); break;
-			case SET_FIELD_1: setField(relative_c, &gameBoard, S_ONE, true, true); break;
-			case SET_FIELD_0: setField(relative_c, &gameBoard, S_ZERO, true, true); break;
-			case UNSET_FIELD: setField(relative_c, &gameBoard, S_UNSET, true, true); break;
-			}
-			clrscr();
+		parseAction(gameBoard, action, global_c, gameFlags);
+		clrscr();
 	} while (action != QUIT_GAME);
 	gameBoard.cleanUp();
 	return 0;
