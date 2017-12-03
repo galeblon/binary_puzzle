@@ -26,6 +26,7 @@ actions getAction() {
 	else if (keyAction == 'k') return CHECK_CONTRADICTION;
 	else if (keyAction == 'd') return RULE2_COUNTER;
 	else if (keyAction == 'a') return AUTO_MODE;
+	else if (keyAction == 'j') return CHECK_UNAMBIGUOUS;
 	return UNDEFINED_ACTION;
 }
 
@@ -40,6 +41,7 @@ void parseAction(board &gameBoard, actions action, coords& global_c, flags& game
 		break;
 	case SIMPLE_TIP: gameFlags.simpleTipToggle = !gameFlags.simpleTipToggle; break;
 	case CHECK_CONTRADICTION: checkContradiction(&gameBoard, true); break;
+	case CHECK_UNAMBIGUOUS: checkUnambiguous(&gameBoard, true); break;
 	case RULE2_COUNTER: gameFlags.rule2CountToggle = !gameFlags.rule2CountToggle; break;
 	case AUTO_MODE: gameFlags.autoMode = !gameFlags.autoMode; break;
 	case MOVE_UP: move(UP, &global_c, &gameBoard); break;
@@ -110,8 +112,15 @@ void board::randomize(){
 		state = rand() % 2 ? S_ONE : S_ZERO;
 		relative.x = rand() % size;
 		relative.y = rand() % size;
-		if (setField(relative, this, state, false, false))
-			count++;
+		if (setField(relative, this, state, false, false)) {
+			if (checkContradiction(this, false)) {
+				this->plane[relative.y][relative.x].state = S_UNSET;
+				this->plane[relative.y][relative.x].editable = true;
+			}
+			else {
+				count++;
+			}
+		}
 		if (count == howMany)
 			break;
 	}
@@ -360,30 +369,85 @@ int loadMap(board* gameBoard, const char* fName, bool showError) {
 }
 
 
+bool isValidInput(const board* gameBoard, int x, int y, states state) {
+	if (checkRule1(gameBoard, x, y, state)
+		&& !checkRule2(gameBoard, x, y, state)
+		&& !checkRule3(gameBoard, x, y, state))
+		return true;
+	return false;
+}
+
 int checkContradiction(const board* gameBoard, bool visible) {
 	_setcursortype(_NOCURSOR);
-	coords relative;
-	coords global;
 	for (int i = 0; i < gameBoard->size; i++) {
 		for (int j = 0; j < gameBoard->size; j++) {
-			if(!checkRule1(gameBoard, j, i, S_ZERO) 
-				|| checkRule2(gameBoard, j, i, S_ZERO)
-				|| checkRule3(gameBoard, j, i, S_ZERO))
-				if (!checkRule1(gameBoard, j, i, S_ONE)
-					|| checkRule2(gameBoard, j, i, S_ONE)
-					|| checkRule3(gameBoard, j, i, S_ONE)) {
-					relative.setCoord(j, i);
-					if (!visible)
-						return 1;
-					global = relativeToGlobal(relative, gameBoard);
-					gotoxy(global.x, global.y);
-					textbackground(RED);
-					cputs(" ");
-					textbackground(DEF_BG_COLOR);
-				}
+			if (gameBoard->plane[i][j].state == S_UNSET) {
+				if (!isValidInput(gameBoard, j, i, S_ZERO))
+					if (!isValidInput(gameBoard, j, i, S_ONE)) {
+						if (!visible)
+							return 1;
+						drawBlankOnPlane(gameBoard, j, i, RED);
+					}
+			}
 		}
 	}
 	if(visible)getch();
 	_setcursortype(_SOLIDCURSOR);
 	return 0;
+}
+int checkUnambiguous(board* gameBoard, bool visible) {
+	field** tmp_plane = new field*[gameBoard->size];
+	for (int i = 0; i < gameBoard->size; i++) {
+		tmp_plane[i] = new field[gameBoard->size];
+		for (int j = 0; j < gameBoard->size; j++) {
+			tmp_plane[i][j].state = S_UNSET;
+		}
+	}
+	cpField(gameBoard->plane, tmp_plane, gameBoard->size);
+	_setcursortype(_NOCURSOR);
+	bool didSomething = false;
+	for (int i = 0; i < gameBoard->size; i++) {
+		for (int j = 0; j < gameBoard->size; j++) {
+			if (gameBoard->plane[i][j].state == S_UNSET) {
+				if (isValidInput(gameBoard, j, i, S_ZERO)) {
+					if (!isValidInput(gameBoard, j, i, S_ONE)) {
+						drawBlankOnPlane(gameBoard, j, i, GREEN);
+						gameBoard->plane[i][j].state = S_ZERO;
+						didSomething = true;
+					}
+				}
+				else {
+					if (isValidInput(gameBoard, j, i, S_ONE)) {
+						drawBlankOnPlane(gameBoard, j, i, GREEN);
+						gameBoard->plane[i][j].state = S_ONE;
+						didSomething = true;
+					}
+				}
+			}
+		}
+	}
+	if (visible) {
+
+	}
+	gotoxy(gameBoard->originPoint.x, gameBoard->originPoint.y-1);
+	textcolor(WHITE);
+	cputs("w - wypelnij te pola");
+	char action = getch();
+	if (action != 'w')
+		cpField(tmp_plane, gameBoard->plane, gameBoard->size);
+
+	for (int i = 0; i < gameBoard->size; i++) {
+		delete[] tmp_plane[i];
+	}
+	delete[] tmp_plane;
+	_setcursortype(_SOLIDCURSOR);
+	return didSomething;
+}
+
+void cpField(field** source, field** destination, int size) {
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++) {
+				destination[i][j].state = source[i][j].state;
+		}
+	}
 }

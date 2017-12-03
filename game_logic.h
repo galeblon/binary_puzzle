@@ -7,8 +7,8 @@
 #define ORIGIN_X 40
 #define ORIGIN_Y 2
 #define NULL 0
-#define MIN_RAND_THRESHOLD 20
-#define MAX_RAND_THRESHOLD 30
+#define MIN_RAND_THRESHOLD 30
+#define MAX_RAND_THRESHOLD 40
 
 
 enum states {
@@ -38,6 +38,7 @@ enum actions {
 	SET_FIELD_0,
 	UNSET_FIELD,
 	CHECK_CONTRADICTION,
+	CHECK_UNAMBIGUOUS,
 	UNDEFINED_ACTION
 };
 struct flags{
@@ -112,9 +113,21 @@ int checkRule3(const board* gameBoard, int x, int y, states state);
 Zwraca 1 w przypadku powodzenia, Zwraca 0 i wyœwietla odpowiedni komunikat w przypadku b³êdu.*/
 int loadMap(board* gameBoard, const char* fName, bool showError);
 
+/*Sprawdza czy dana wartoœæ nie ³amie ¿adnej zasady w danym polu, zwraca true jeœli tak jest.
+zwraca false w przeciwnym wypadku.*/
+bool isValidInput(const board* gameBoard, int x, int y, states state);
+
 /*Przechodzi przez plansze i podswietla punkty w ktorych nie mo¿na nic wpisaæ.
 Zwraca 1 je¿eli znajdzie siê pole sprzeczne.*/
 int checkContradiction(const board* gameBoard, bool visible);
+
+/*W trybie visible Przechodzi przez plansze i podswietla punkty w których mo¿na wpisaæ dok³adnie 1 wartoœæ. Wciœniêcie 'w' wype³ni te pola.
+W trybie non-visible wype³nia pola bez interakcji z u¿ytkownikiem. 
+Zwraca wartoœæ 0 je¿eli nie ma ¿adnego pola jednoznacznego*/
+int checkUnambiguous(board* gameBoard, bool visible);
+
+/*Przepisuje niepuste pola z source do destination, size to rozmiar jednego wymiaru kwadratowej tablicy.*/
+void cpField(field** source, field** destination, int size);
 
 /*Zwraca iloœæ pól wystêpuj¹cych w danym wierszy o danej wartoœci.*/
 int countInRow(const board* gameBoard, int row, states state);

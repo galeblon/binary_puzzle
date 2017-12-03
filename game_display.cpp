@@ -40,7 +40,7 @@ void drawLegend(coords global, int color, flags& gameFlags) {
 	gotoxy(x, y);
 	putTextLine(&global, "Adrian Misiak");
 	putTextLine(&global, "nr. indeksu 171600");
-	putTextLine(&global, "abcdefghijk");
+	putTextLine(&global, "abcdefghijklm");
 	putTextLine(&global, "esc - wyjscie");
 	putTextLine(&global, "n - nowa gra");
 	putTextLine(&global, "o - losowe wypelnienie");
@@ -49,6 +49,7 @@ void drawLegend(coords global, int color, flags& gameFlags) {
 	putTextLine(&global, "k - sprawdz sprzecznosc");
 	putTextByFlag(&global, gameFlags.rule2CountToggle, "d", "  - licznik reguly 2");
 	putTextByFlag(&global, gameFlags.autoMode, "a", "  - detekcja konca gry");
+	putTextLine(&global, "j - pola jednoznaczne");
 	textbackground(DEF_BG_COLOR);
 
 }
@@ -230,6 +231,16 @@ void drawBorder(int x, int y, int size_w, int size_h, int color) {
 	textcolor(LIGHTGRAY);
 }
 
+void drawBlankOnPlane(const board* gameBoard,int x, int y, int color) {
+	coords relative, global;
+	relative.setCoord(x, y);
+	global = relativeToGlobal(relative, gameBoard);
+	gotoxy(global.x, global.y);
+	textbackground(color);
+	cputs(" ");
+	textbackground(DEF_BG_COLOR);
+}
+
 void showErrMsg(int x, int y, const char* str) {
 	_setcursortype(_NOCURSOR);
 	static int inc;
@@ -255,16 +266,31 @@ void drawGameScreen(flags& gameFlags, board& gameBoard, coords legend_c, coords 
 }
 
 void showIfSolvable(const board* gameBoard) {
-	if (checkContradiction(gameBoard, false)) {
-		textbackground(WHITE);
-		textcolor(RED);
-		coords global;
-		global.setCoord(gameBoard->originPoint.x, gameBoard->originPoint.y);
-		gotoxy(global.x, global.y);
-		putTextLine(&global, "Gry nie mozna ukonczyc.");
+	_setcursortype(_NOCURSOR);
+	coords global;
+	global.setCoord(gameBoard->originPoint.x, gameBoard->originPoint.y);
+	gotoxy(global.x, global.y);
+	bool filled = true;
+	for (int i = 0; i < gameBoard->size; i++) {
+		for (int j = 0; j < gameBoard->size; j++) {
+			if (gameBoard->plane[i][j].state == S_UNSET)
+				filled = false;
+		}
+	}
+	textbackground(WHITE);
+	if (filled) {
+		textcolor(GREEN);
+		putTextLine(&global, "Gra ukonczona.");
 		textbackground(DEF_BG_COLOR);
+		return;
+	}
+	if (checkContradiction(gameBoard, false)) {
+		textcolor(RED);
+		putTextLine(&global, "Gry nie mozna ukonczyc.");
 		textcolor(BLACK);
 	}
+	textbackground(DEF_BG_COLOR);
+	_setcursortype(_SOLIDCURSOR);
 }
 
 void getInput(char* query, char* res, bool numerical) {

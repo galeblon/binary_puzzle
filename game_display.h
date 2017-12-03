@@ -20,6 +20,9 @@
 /*Wyœwietla obramowanie w podanych wspó³rzêdnych o podanych wymiarach i kolorze*/
 void drawBorder(int x, int y, int size_w, int size_h, int color);
 
+/*Podœwietla pole na planszy w podanym kolorze*/
+void drawBlankOnPlane(const board* gameBoard, int x, int y, int color);
+
 /*Wyœwietla okno z legend¹ w miejscu o wspó³rzêdnych x,y.
 kolor obramowania podany w parametrze color.*/
 void drawLegend(coords global, int color, flags& gameFlags);
