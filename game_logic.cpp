@@ -18,15 +18,18 @@ actions getAction() {
 	else if (keyAction == '1') return SET_FIELD_1;
 	else if (keyAction == '0') return SET_FIELD_0;
 	else if (keyAction == 0x08) return UNSET_FIELD;
-	else if (keyAction == 'n') return NEW_GAME;
-	else if (keyAction == 'o') return RANDOMIZE_BOARD;
-	else if (keyAction == 'r') return RESIZE_BOARD;
+	else if (keyAction == 'n' || keyAction == 'N') return NEW_GAME;
+	else if (keyAction == 'o' || keyAction == 'O') return RANDOMIZE_BOARD;
+	else if (keyAction == 'r' || keyAction == 'R') return RESIZE_BOARD;
 	else if (keyAction == 0x1B) return QUIT_GAME;
-	else if (keyAction == 'p') return SIMPLE_TIP;
-	else if (keyAction == 'k') return CHECK_CONTRADICTION;
-	else if (keyAction == 'd') return RULE2_COUNTER;
-	else if (keyAction == 'a') return AUTO_MODE;
-	else if (keyAction == 'j') return CHECK_UNAMBIGUOUS;
+	else if (keyAction == 'p' || keyAction == 'P') return SIMPLE_TIP;
+	else if (keyAction == 'k' || keyAction == 'K') return CHECK_CONTRADICTION;
+	else if (keyAction == 'd' || keyAction == 'D') return RULE2_COUNTER;
+	else if (keyAction == 'a' || keyAction == 'A') return AUTO_MODE;
+	else if (keyAction == 'j' || keyAction == 'J') return CHECK_UNAMBIGUOUS;
+	else if (keyAction == 's' || keyAction == 'S') return SAVE_GAME;
+	else if (keyAction == 'l' || keyAction == 'L') return LOAD_GAME;
+	else if (keyAction == 'b' || keyAction == 'B') return SHOW_SOLUTION;
 	return UNDEFINED_ACTION;
 }
 
@@ -34,7 +37,7 @@ void parseAction(board &gameBoard, actions action, coords& global_c, flags& game
 	_setcursortype(_NOCURSOR);
 	coords relative_c = globalToRelative(global_c, &gameBoard);
 	switch (action) {
-	case NEW_GAME: loadMap(&gameBoard, "default.map", false); break;
+	case NEW_GAME: loadMap(&gameBoard, &gameFlags, "default.map", false); break;
 	case RANDOMIZE_BOARD: gameBoard.randomize(); break;
 	case RESIZE_BOARD: gameBoard.resize();
 		global_c.setCoord(gameBoard.originPoint.x + 1, gameBoard.originPoint.y + 1);
@@ -44,6 +47,9 @@ void parseAction(board &gameBoard, actions action, coords& global_c, flags& game
 	case CHECK_UNAMBIGUOUS: checkUnambiguous(&gameBoard, true); break;
 	case RULE2_COUNTER: gameFlags.rule2CountToggle = !gameFlags.rule2CountToggle; break;
 	case AUTO_MODE: gameFlags.autoMode = !gameFlags.autoMode; break;
+	case SAVE_GAME: saveMap(&gameBoard, &gameFlags); break;
+	case LOAD_GAME: loadGame(&gameBoard, &gameFlags, &global_c); break;
+	case SHOW_SOLUTION: showSolution(gameBoard.plane, gameBoard.size); break;
 	case MOVE_UP: move(UP, &global_c, &gameBoard); break;
 	case MOVE_DOWN: move(DOWN, &global_c, &gameBoard); break;
 	case MOVE_LEFT: move(LEFT, &global_c, &gameBoard); break;
@@ -130,14 +136,15 @@ void board::randomize(){
 }
 
 void board::resize() {
-	char number[9]; 
+	char number[9];
+	flags localFlags;
 	getInput("Podaj nowy rozmiar: ", number, true);
 	gotoxy(1, 1);
 	int newSize = atoi(number);
 	if (initialize(newSize)) {
 		char buff[256];
 		sprintf(buff, "%i.map", newSize);
-		if (loadMap(this, buff, false)) {
+		if (loadMap(this, &localFlags, buff, false)) {
 			cputs(" Wczytano mape z pliku.");
 		}
 		else {
@@ -308,8 +315,106 @@ int checkRule3(const board* gameBoard, int x, int y, states state) {
 	return 0;
 }
 
+int loadGame(board* gameBoard, flags* gameFlags, coords* global) {
+	char buff[9];
+	char path[256];
+	getInput("Podaj nazwe zapisanej gry: ", buff, false);
+	if (buff[0] == 0) {
+		showErrMsg(1, 1, "Niepoprawna nazwa.");
+		return 0;
+	}
+	sprintf(path, "saves\\%s.sav", buff);
+	if (!loadMap(gameBoard, gameFlags, path, true))
+		showErrMsg(1, 2, "Niepowodzenie we wczytywaniu stanu gry.");
+	global->setCoord(gameBoard->originPoint.x + 1, gameBoard->originPoint.y + 1);
+}
 
-int loadMap(board* gameBoard, const char* fName, bool showError) {
+
+int saveMap(const board* gameBoard, const flags* gameFlags) {
+	FILE *fpointer;
+	char buff[9];
+	char path[256];
+	getInput("Podaj nazwe zapisu: ", buff, false);
+	if (buff[0] == 0) {
+		showErrMsg(1, 1, "Niepoprawna nazwa.");
+		return 0;
+	}
+	sprintf(path, "map\\saves\\%s.sav", buff);
+	fpointer = fopen(path, "w");
+	coords relative;
+	if (fpointer != NULL) {
+		fprintf(fpointer, "%d\n", gameBoard->size);
+		for (int i = 0; i < gameBoard->size; i++) {
+			for (int j = 0; j < gameBoard->size; j++) {
+				relative.setCoord(j, i);
+				if (gameBoard->plane[i][j].state == S_ONE) {
+					if (gameBoard->plane[i][j].editable)
+						fprintf(fpointer, "i");
+					else
+						fprintf(fpointer, "1");
+				}
+				else if (gameBoard->plane[i][j].state == S_ZERO) {
+					if (gameBoard->plane[i][j].editable)
+						fprintf(fpointer, "o");
+					else
+						fprintf(fpointer, "0");
+				}
+				else {
+					fprintf(fpointer, ".");
+				}
+
+			}
+			fprintf(fpointer, "\n");
+		}
+		fprintf(fpointer, "\n%d%d%d", gameFlags->autoMode, gameFlags->rule2CountToggle, gameFlags->simpleTipToggle);
+	}
+	else {
+		showErrMsg(1, 1, "Zapis sie nie powiodl.");
+		return 0;
+	}
+	fclose(fpointer);
+	return	1;
+}
+void loadFlags(flags* gameFlags, FILE* fpointer) {
+	int val = 0;
+	fscanf(fpointer, "%1d", &val);
+	gameFlags->autoMode =  val ? true : false;
+	fscanf(fpointer, "%1d", &val);
+	gameFlags->rule2CountToggle = val ? true : false;
+	fscanf(fpointer, "%1d", &val);
+	gameFlags->simpleTipToggle = val ? true : false;
+}
+
+
+int isValidFromFile(board* gameBoard, coords relative,char val, bool showError) {
+	if (val == '1') {
+		if (!(setField(relative, gameBoard, S_ONE, false, false))) {
+			if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
+			return 0;
+		}
+	}
+	else if (val == 'i') {
+		if (!(setField(relative, gameBoard, S_ONE, true, false))) {
+			if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
+			return 0;
+		}
+	}
+	else if (val == 'o') {
+		if (!(setField(relative, gameBoard, S_ZERO, true, false))) {
+			if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
+			return 0;
+		}
+	}
+	else if (val == '0') {
+		if (!(setField(relative, gameBoard, S_ZERO, false, false))) {
+			if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
+			return 0;
+		}
+	}
+}
+
+
+int loadMap(board* gameBoard, flags* gameFlags, const char* fName, bool showError) {
 	FILE *fpointer;
 	char path[256];
 	sprintf(path, "map\\%s", fName);
@@ -317,11 +422,9 @@ int loadMap(board* gameBoard, const char* fName, bool showError) {
 	cputs(path);
 	fpointer = fopen(path, "r+");
 	if(fpointer != NULL) {
-		gameBoard->cleanUp();
 		int size=0;
 		fscanf(fpointer, "%d\n", &size);
-		if (size < 2 || size%2) {
-			gameBoard->initialize(DEFAULT_SIZE);
+		if (!gameBoard->initialize(size)) {
 			showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size+2, "Niepoprawna wielkosc planszy.");
 			fclose(fpointer);
 			return 0;
@@ -332,33 +435,20 @@ int loadMap(board* gameBoard, const char* fName, bool showError) {
 			for (int i = 0; i < size; i++) {
 				for (int j = 0; j < size; j++) {
 					char val;
-					relative.x = j;
-					relative.y = i;
+					relative.setCoord(j, i);
 					if (fscanf(fpointer, "%c", &val) == EOF) {
-						gameBoard->cleanUp();
 						gameBoard->initialize(DEFAULT_SIZE);
 						showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Plik zbyt krotki.");
 						fclose(fpointer);
 						return 0;
 					}
-					if (val == '1') {
-						if (!(setField(relative, gameBoard, S_ONE, false, false))) {
-							if(showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
-							return 0;
-						}
-					}
-					else if (val == '0') {
-						if (!(setField(relative, gameBoard, S_ZERO, false, false))) {
-							if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
-							return 0;
-						}
-					}
+					isValidFromFile(gameBoard, relative, val, showError);
 				}
 				fscanf(fpointer, "\n");
 			}
 
 		}
-	
+		loadFlags(gameFlags, fpointer);
 	fclose(fpointer);
 	return 1;
 	}
@@ -411,14 +501,14 @@ int checkUnambiguous(board* gameBoard, bool visible) {
 			if (gameBoard->plane[i][j].state == S_UNSET) {
 				if (isValidInput(gameBoard, j, i, S_ZERO)) {
 					if (!isValidInput(gameBoard, j, i, S_ONE)) {
-						drawBlankOnPlane(gameBoard, j, i, GREEN);
+						if(visible)drawBlankOnPlane(gameBoard, j, i, GREEN);
 						gameBoard->plane[i][j].state = S_ZERO;
 						didSomething = true;
 					}
 				}
 				else {
 					if (isValidInput(gameBoard, j, i, S_ONE)) {
-						drawBlankOnPlane(gameBoard, j, i, GREEN);
+						if(visible)drawBlankOnPlane(gameBoard, j, i, GREEN);
 						gameBoard->plane[i][j].state = S_ONE;
 						didSomething = true;
 					}
@@ -431,15 +521,17 @@ int checkUnambiguous(board* gameBoard, bool visible) {
 	}
 	gotoxy(gameBoard->originPoint.x, gameBoard->originPoint.y-1);
 	textcolor(WHITE);
-	cputs("w - wypelnij te pola");
-	char action = getch();
-	if (action != 'w')
+	if(visible)cputs("w - wypelnij te pola");
+	char action; 
+	action = visible ? getch() : 'w';
+	if (action != 'w' && action != 'W')
 		cpField(tmp_plane, gameBoard->plane, gameBoard->size);
 
 	for (int i = 0; i < gameBoard->size; i++) {
 		delete[] tmp_plane[i];
 	}
 	delete[] tmp_plane;
+	clrscr();
 	_setcursortype(_SOLIDCURSOR);
 	return didSomething;
 }
@@ -448,6 +540,22 @@ void cpField(field** source, field** destination, int size) {
 	for (int i = 0; i < size; i++) {
 		for (int j = 0; j < size; j++) {
 				destination[i][j].state = source[i][j].state;
+				destination[i][j].editable = source[i][j].editable;
 		}
 	}
+}
+
+int showSolution(field** gameField, int size) {
+	_setcursortype(_NOCURSOR);
+	board gameBoard;
+	gameBoard.initialize(size);
+	cpField(gameField, gameBoard.plane, size);
+
+	while (checkUnambiguous(&gameBoard, false));
+
+	gameBoard.show(GREEN);
+	getch();
+	gameBoard.cleanUp();
+	_setcursortype(_SOLIDCURSOR);
+	return 1;
 }

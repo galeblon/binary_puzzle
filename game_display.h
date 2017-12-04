@@ -6,7 +6,7 @@
 #include<cstdlib>
 
 #define L_WIDTH 25
-#define L_HEIGHT 15
+#define L_HEIGHT 17
 #define L_ORIGIN_X 2
 #define L_ORIGIN_Y 2
 #define T_WIDTH 32
@@ -56,7 +56,7 @@ void showErrMsg(int x, int y, const char* str);
 /*Je¿eli dokoñczenie rozgrywki nie jest mo¿liwe, wyœwietla komunikat o tym informuj¹cy.*/
 void showIfSolvable(const board* gameBoard);
 
-/*Wyœwietla okienko z zapytaniem i pobiera dane od u¿ytkownika, maksymalnie 8 znakowy ci¹g.*/
+/*Wyœwietla okienko z zapytaniem i pobiera dane od u¿ytkownika, maksymalnie 8 znakowy ci¹g, res powinno byc tablic¹ min. 9 elementow¹.*/
 void getInput(char* query, char* res, bool numerical);
 
 #endif 

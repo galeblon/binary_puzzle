@@ -40,7 +40,7 @@ void drawLegend(coords global, int color, flags& gameFlags) {
 	gotoxy(x, y);
 	putTextLine(&global, "Adrian Misiak");
 	putTextLine(&global, "nr. indeksu 171600");
-	putTextLine(&global, "abcdefghijklm");
+	putTextLine(&global, "abcdefghijklmn");
 	putTextLine(&global, "esc - wyjscie");
 	putTextLine(&global, "n - nowa gra");
 	putTextLine(&global, "o - losowe wypelnienie");
@@ -50,6 +50,9 @@ void drawLegend(coords global, int color, flags& gameFlags) {
 	putTextByFlag(&global, gameFlags.rule2CountToggle, "d", "  - licznik reguly 2");
 	putTextByFlag(&global, gameFlags.autoMode, "a", "  - detekcja konca gry");
 	putTextLine(&global, "j - pola jednoznaczne");
+	putTextLine(&global, "s - zapisz gre");
+	putTextLine(&global, "l - wczytaj gre");
+	putTextLine(&global, "b - rozwiazanie");
 	textbackground(DEF_BG_COLOR);
 
 }
@@ -252,6 +255,7 @@ void showErrMsg(int x, int y, const char* str) {
 	textcolor(LIGHTGRAY);
 	inc = (inc + 1) % 2;
 	getch();
+	clrscr();
 	_setcursortype(_SOLIDCURSOR);
 }
 
@@ -310,7 +314,7 @@ void getInput(char* query, char* res, bool numerical) {
 				cputs(digit);
 			}
 		}
-		else if('0'<= digit[0] &&  digit[0]<'z' && counter < 8){
+		else if('0'<= digit[0] &&  digit[0]<='z' && counter < 8){
 			res[counter] = digit[0];
 			counter++;
 			cputs(digit);

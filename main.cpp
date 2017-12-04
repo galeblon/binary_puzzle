@@ -25,7 +25,7 @@ int main() {
 		gotoxy(global_c.x, global_c.y);
 		action = getAction();
 		parseAction(gameBoard, action, global_c, gameFlags);
-		clrscr();
+		
 	} while (action != QUIT_GAME);
 	gameBoard.cleanUp();
 	return 0;

@@ -28,8 +28,11 @@ enum actions {
 	RANDOMIZE_BOARD,
 	RESIZE_BOARD,
 	SIMPLE_TIP,
+	SHOW_SOLUTION,
 	RULE2_COUNTER,
 	AUTO_MODE,
+	LOAD_GAME,
+	SAVE_GAME,
 	MOVE_UP,
 	MOVE_DOWN,
 	MOVE_LEFT,
@@ -111,7 +114,19 @@ int checkRule3(const board* gameBoard, int x, int y, states state);
 
 /*Próbuje wczytaæ mapê z pliku o nazwie przekazanej do parametru do planszy przekazanej do parametru.
 Zwraca 1 w przypadku powodzenia, Zwraca 0 i wyœwietla odpowiedni komunikat w przypadku b³êdu.*/
-int loadMap(board* gameBoard, const char* fName, bool showError);
+int loadMap(board* gameBoard, flags* gameFlags, const char* fName, bool showError);
+
+/*Wczytuje nazwe pliku z klawiatury i wywo³uje loadmap z odpowiednimi parametrami.*/
+int loadGame(board* gameBoard, flags* gameFlags, coords* global);
+
+/*Podfunkcja loadMap, sprawdza i informuje czy wczytywany plik jest poprawnie uformowany.*/
+int isValidFromFile(board* gameBoard, coords relative, char val, bool showError);
+
+/*Odpowiedzialny za odczyt i interptacje bitów na koñcu plików odpowiedzialnych za stan flag w grze.*/
+void loadFlags(flags* gameFlags, FILE* fpointer);
+
+/*Prosi u¿ytkownika o podanie nazwy pliku, tworzy nowy plik i zapisuje w nim informacje o stanie rozgrywki.*/
+int saveMap(const board* gameBoard, const flags* gameFlags);
 
 /*Sprawdza czy dana wartoœæ nie ³amie ¿adnej zasady w danym polu, zwraca true jeœli tak jest.
 zwraca false w przeciwnym wypadku.*/
@@ -126,7 +141,7 @@ W trybie non-visible wype³nia pola bez interakcji z u¿ytkownikiem.
 Zwraca wartoœæ 0 je¿eli nie ma ¿adnego pola jednoznacznego*/
 int checkUnambiguous(board* gameBoard, bool visible);
 
-/*Przepisuje niepuste pola z source do destination, size to rozmiar jednego wymiaru kwadratowej tablicy.*/
+/*Przepisuje pola z source do destination, size to rozmiar jednego wymiaru kwadratowej tablicy.*/
 void cpField(field** source, field** destination, int size);
 
 /*Zwraca iloœæ pól wystêpuj¹cych w danym wierszy o danej wartoœci.*/
@@ -134,5 +149,7 @@ int countInRow(const board* gameBoard, int row, states state);
 
 /*Zwraca iloœæ pól wystêpuj¹cych w danej kolumnie o danej wartoœci.*/
 int countInCol(const board* gameBoard, int col, states state);
+
+int showSolution(field** gameField, int size);
 
 #endif 
