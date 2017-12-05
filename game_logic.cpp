@@ -1,9 +1,6 @@
 #include"game_logic.h"
 #include"game_display.h"
-#include"conio2.h"
-#include<stdlib.h>
-#include<time.h>
-#include<math.h>
+
 
 actions getAction() {
 	_setcursortype(_SOLIDCURSOR);
@@ -40,16 +37,16 @@ void parseAction(board &gameBoard, actions action, coords& global_c, flags& game
 	case NEW_GAME: loadMap(&gameBoard, &gameFlags, "default.map", false); break;
 	case RANDOMIZE_BOARD: gameBoard.randomize(); break;
 	case RESIZE_BOARD: gameBoard.resize();
-		global_c.setCoord(gameBoard.originPoint.x + 1, gameBoard.originPoint.y + 1);
+		global_c.setCoord(gameBoard.originPoint.x + 1, gameBoard.originPoint.y + 1); //Aby przypadkiem nie wypaœæ za planszê.
 		break;
-	case SIMPLE_TIP: gameFlags.simpleTipToggle = !gameFlags.simpleTipToggle; break;
+	case SIMPLE_TIP: gameFlags.simpleTipToggle = !gameFlags.simpleTipToggle; clrscr(); break;
 	case CHECK_CONTRADICTION: checkContradiction(&gameBoard, true); break;
 	case CHECK_UNAMBIGUOUS: checkUnambiguous(&gameBoard, true); break;
-	case RULE2_COUNTER: gameFlags.rule2CountToggle = !gameFlags.rule2CountToggle; break;
-	case AUTO_MODE: gameFlags.autoMode = !gameFlags.autoMode; break;
+	case RULE2_COUNTER: gameFlags.rule2CountToggle = !gameFlags.rule2CountToggle;  clrscr(); break;
+	case AUTO_MODE: gameFlags.autoMode = !gameFlags.autoMode; clrscr(); break;
 	case SAVE_GAME: saveMap(&gameBoard, &gameFlags); break;
 	case LOAD_GAME: loadGame(&gameBoard, &gameFlags, &global_c); break;
-	case SHOW_SOLUTION: showSolution(gameBoard.plane, gameBoard.size); break;
+	case SHOW_SOLUTION:checkSolution(&gameBoard); break;
 	case MOVE_UP: move(UP, &global_c, &gameBoard); break;
 	case MOVE_DOWN: move(DOWN, &global_c, &gameBoard); break;
 	case MOVE_LEFT: move(LEFT, &global_c, &gameBoard); break;
@@ -67,6 +64,7 @@ coords globalToRelative(coords global, const board *gameBoard) {
 	relative.y = global.y - gameBoard->originPoint.y - 1;
 	return relative;
 }
+
 coords relativeToGlobal(coords relative, const board *gameBoard) {
 	coords global;
 	global.x =  relative.x + gameBoard->originPoint.x + 1;
@@ -96,45 +94,6 @@ int board::initialize(int newSize) {
 	return 1;
 }
 
-
-void board::cleanUp() {
-	for (int i = 0; i < size; i++)
-		delete[] plane[i];
-	delete[] plane;
-	plane = NULL;
-}
-void board::randomize(){
-	srand(time(NULL));
-	for (int i = 0; i < size; i++)
-		for (int j = 0; j < size; j++) {
-			plane[i][j].state = S_UNSET;
-			plane[i][j].editable = true;
-		}
-	int howMany = size*size*(rand() % (MAX_RAND_THRESHOLD - MIN_RAND_THRESHOLD) + MIN_RAND_THRESHOLD) / 100.0;
-	if (!howMany)	//Dla ma³ych plansz kiedy zaokraglona wartoœæ jest równa 0.
-		howMany++;
-	int count = 0; states state; coords relative;
-	for (int i = 0; i < pow(size, 4); i++) {
-		state = rand() % 2 ? S_ONE : S_ZERO;
-		relative.x = rand() % size;
-		relative.y = rand() % size;
-		if (setField(relative, this, state, false, false)) {
-			if (checkContradiction(this, false)) {
-				this->plane[relative.y][relative.x].state = S_UNSET;
-				this->plane[relative.y][relative.x].editable = true;
-			}
-			else {
-				count++;
-			}
-		}
-		if (count == howMany)
-			break;
-	}
-	textbackground(DEF_BG_COLOR);
-	clrscr();
-
-}
-
 void board::resize() {
 	char number[9];
 	flags localFlags;
@@ -158,6 +117,43 @@ void board::resize() {
 	}
 	getch();
 	gotoxy(originPoint.x + 1, originPoint.y + 1);
+}
+
+void board::cleanUp() {
+	for (int i = 0; i < size; i++)
+		delete[] plane[i];
+	delete[] plane;
+	plane = NULL;
+}
+
+void board::randomize(){
+	srand(time(NULL));
+	for (int i = 0; i < size; i++)
+		for (int j = 0; j < size; j++) {
+			plane[i][j].state = S_UNSET;
+			plane[i][j].editable = true;
+		}
+	int howMany = size*size*(rand() % (MAX_RAND_THRESHOLD - MIN_RAND_THRESHOLD) + MIN_RAND_THRESHOLD) / 100.0;
+	int count = 0; states state; coords relative;
+	for (int i = 0; i < pow(size, 4); i++) {
+		state = rand() % 2 ? S_ONE : S_ZERO;
+		relative.x = rand() % size;
+		relative.y = rand() % size;
+		if (setField(relative, this, state, false, false)) {
+			if (checkContradiction(this, false)) {
+				this->plane[relative.y][relative.x].state = S_UNSET;
+				this->plane[relative.y][relative.x].editable = true;
+			}
+			else {
+				count++;
+			}
+		}
+		if (count >= howMany)
+			break;
+	}
+	textbackground(DEF_BG_COLOR);
+	clrscr();
+
 }
 
 
@@ -272,21 +268,6 @@ int checkRule2(const board* gameBoard, int x, int y, states state) {
 	return 0;
 }
 
-int countInRow(const board* gameBoard, int row, states state) {
-	int count = 0;
-	for (int i = 0; i < gameBoard->size; i++)
-		if (gameBoard->plane[row][i].state == state)
-			count++;
-	return count;
-}
-
-int countInCol(const board* gameBoard, int col, states state) {
-	int count = 0;
-	for (int i = 0; i < gameBoard->size; i++)
-		if (gameBoard->plane[i][col].state == state)
-			count++;
-	return count;
-}
 
 int checkRule3(const board* gameBoard, int x, int y, states state) {
 	if (state == S_UNSET)
@@ -315,6 +296,66 @@ int checkRule3(const board* gameBoard, int x, int y, states state) {
 	return 0;
 }
 
+int countInRow(const board* gameBoard, int row, states state) {
+	int count = 0;
+	for (int i = 0; i < gameBoard->size; i++)
+		if (gameBoard->plane[row][i].state == state)
+			count++;
+	return count;
+}
+
+int countInCol(const board* gameBoard, int col, states state) {
+	int count = 0;
+	for (int i = 0; i < gameBoard->size; i++)
+		if (gameBoard->plane[i][col].state == state)
+			count++;
+	return count;
+}
+
+int loadMap(board* gameBoard, flags* gameFlags, const char* fName, bool showError) {
+	FILE *fpointer;
+	char path[256];
+	sprintf(path, "map\\%s", fName);
+	gotoxy(1, 1);
+	cputs(path);
+	fpointer = fopen(path, "r+");
+	if (fpointer != NULL) {
+		int size = 0;
+		fscanf(fpointer, "%d\n", &size);
+		if (!gameBoard->initialize(size)) {
+			showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawna wielkosc planszy.");
+			fclose(fpointer);
+			return 0;
+		}
+		else {
+			gameBoard->initialize(size);
+			coords relative;
+			for (int i = 0; i < size; i++) {
+				for (int j = 0; j < size; j++) {
+					char val;
+					relative.setCoord(j, i);
+					if (fscanf(fpointer, "%c", &val) == EOF) {
+						gameBoard->initialize(DEFAULT_SIZE);
+						showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Plik zbyt krotki.");
+						fclose(fpointer);
+						return 0;
+					}
+					isValidFromFile(gameBoard, relative, val, showError);
+				}
+				fscanf(fpointer, "\n");
+			}
+
+		}
+		loadFlags(gameFlags, fpointer);
+		fclose(fpointer);
+		return 1;
+	}
+	else {
+		if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Blad z otwarciem pliku.");
+		return 0;
+	}
+}
+
 int loadGame(board* gameBoard, flags* gameFlags, coords* global) {
 	char buff[9];
 	char path[256];
@@ -329,6 +370,41 @@ int loadGame(board* gameBoard, flags* gameFlags, coords* global) {
 	global->setCoord(gameBoard->originPoint.x + 1, gameBoard->originPoint.y + 1);
 }
 
+void loadFlags(flags* gameFlags, FILE* fpointer) {
+	int val = 0;
+	fscanf(fpointer, "%1d", &val);
+	gameFlags->autoMode = val ? true : false;
+	fscanf(fpointer, "%1d", &val);
+	gameFlags->rule2CountToggle = val ? true : false;
+	fscanf(fpointer, "%1d", &val);
+	gameFlags->simpleTipToggle = val ? true : false;
+}
+
+
+void isValidFromFile(board* gameBoard, coords relative,char val, bool showError) {
+	switch (val) {
+	case '1':
+		if ((setField(relative, gameBoard, S_ONE, false, false))) return; break;
+	case 'i':
+		if ((setField(relative, gameBoard, S_ONE, true, false))) return; break;
+	case '0':
+		if ((setField(relative, gameBoard, S_ZERO, false, false))) return; break;
+	case 'o':
+		if ((setField(relative, gameBoard, S_ZERO, true, false))) return; break;
+	case '.':
+		setField(relative, gameBoard, S_UNSET, true, false); return;
+	}
+	if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
+}
+
+
+bool isValidInput(const board* gameBoard, int x, int y, states state) {
+	if (checkRule1(gameBoard, x, y, state)
+		&& !checkRule2(gameBoard, x, y, state)
+		&& !checkRule3(gameBoard, x, y, state))
+		return true;
+	return false;
+}
 
 int saveMap(const board* gameBoard, const flags* gameFlags) {
 	FILE *fpointer;
@@ -375,100 +451,8 @@ int saveMap(const board* gameBoard, const flags* gameFlags) {
 	fclose(fpointer);
 	return	1;
 }
-void loadFlags(flags* gameFlags, FILE* fpointer) {
-	int val = 0;
-	fscanf(fpointer, "%1d", &val);
-	gameFlags->autoMode =  val ? true : false;
-	fscanf(fpointer, "%1d", &val);
-	gameFlags->rule2CountToggle = val ? true : false;
-	fscanf(fpointer, "%1d", &val);
-	gameFlags->simpleTipToggle = val ? true : false;
-}
-
-
-int isValidFromFile(board* gameBoard, coords relative,char val, bool showError) {
-	if (val == '1') {
-		if (!(setField(relative, gameBoard, S_ONE, false, false))) {
-			if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
-			return 0;
-		}
-	}
-	else if (val == 'i') {
-		if (!(setField(relative, gameBoard, S_ONE, true, false))) {
-			if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
-			return 0;
-		}
-	}
-	else if (val == 'o') {
-		if (!(setField(relative, gameBoard, S_ZERO, true, false))) {
-			if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
-			return 0;
-		}
-	}
-	else if (val == '0') {
-		if (!(setField(relative, gameBoard, S_ZERO, false, false))) {
-			if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Niepoprawnie uformowana mapa.");
-			return 0;
-		}
-	}
-}
-
-
-int loadMap(board* gameBoard, flags* gameFlags, const char* fName, bool showError) {
-	FILE *fpointer;
-	char path[256];
-	sprintf(path, "map\\%s", fName);
-	gotoxy(1, 1);
-	cputs(path);
-	fpointer = fopen(path, "r+");
-	if(fpointer != NULL) {
-		int size=0;
-		fscanf(fpointer, "%d\n", &size);
-		if (!gameBoard->initialize(size)) {
-			showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size+2, "Niepoprawna wielkosc planszy.");
-			fclose(fpointer);
-			return 0;
-		}
-		else {
-			gameBoard->initialize(size);
-			coords relative;
-			for (int i = 0; i < size; i++) {
-				for (int j = 0; j < size; j++) {
-					char val;
-					relative.setCoord(j, i);
-					if (fscanf(fpointer, "%c", &val) == EOF) {
-						gameBoard->initialize(DEFAULT_SIZE);
-						showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size + 2, "Plik zbyt krotki.");
-						fclose(fpointer);
-						return 0;
-					}
-					isValidFromFile(gameBoard, relative, val, showError);
-				}
-				fscanf(fpointer, "\n");
-			}
-
-		}
-		loadFlags(gameFlags, fpointer);
-	fclose(fpointer);
-	return 1;
-	}
-	else {
-		if (showError)showErrMsg(gameBoard->originPoint.x, gameBoard->originPoint.y + gameBoard->size+2, "Blad z otwarciem pliku.");
-		return 0;
-	}
-}
-
-
-bool isValidInput(const board* gameBoard, int x, int y, states state) {
-	if (checkRule1(gameBoard, x, y, state)
-		&& !checkRule2(gameBoard, x, y, state)
-		&& !checkRule3(gameBoard, x, y, state))
-		return true;
-	return false;
-}
 
 int checkContradiction(const board* gameBoard, bool visible) {
-	_setcursortype(_NOCURSOR);
 	for (int i = 0; i < gameBoard->size; i++) {
 		for (int j = 0; j < gameBoard->size; j++) {
 			if (gameBoard->plane[i][j].state == S_UNSET) {
@@ -482,7 +466,6 @@ int checkContradiction(const board* gameBoard, bool visible) {
 		}
 	}
 	if(visible)getch();
-	_setcursortype(_SOLIDCURSOR);
 	return 0;
 }
 int checkUnambiguous(board* gameBoard, bool visible) {
@@ -494,7 +477,6 @@ int checkUnambiguous(board* gameBoard, bool visible) {
 		}
 	}
 	cpField(gameBoard->plane, tmp_plane, gameBoard->size);
-	_setcursortype(_NOCURSOR);
 	bool didSomething = false;
 	for (int i = 0; i < gameBoard->size; i++) {
 		for (int j = 0; j < gameBoard->size; j++) {
@@ -502,6 +484,7 @@ int checkUnambiguous(board* gameBoard, bool visible) {
 				if (isValidInput(gameBoard, j, i, S_ZERO)) {
 					if (!isValidInput(gameBoard, j, i, S_ONE)) {
 						if(visible)drawBlankOnPlane(gameBoard, j, i, GREEN);
+						if (!visible)gameBoard->plane[i][j].color = YELLOW;
 						gameBoard->plane[i][j].state = S_ZERO;
 						didSomething = true;
 					}
@@ -509,6 +492,7 @@ int checkUnambiguous(board* gameBoard, bool visible) {
 				else {
 					if (isValidInput(gameBoard, j, i, S_ONE)) {
 						if(visible)drawBlankOnPlane(gameBoard, j, i, GREEN);
+						if (!visible)gameBoard->plane[i][j].color = YELLOW;
 						gameBoard->plane[i][j].state = S_ONE;
 						didSomething = true;
 					}
@@ -516,23 +500,23 @@ int checkUnambiguous(board* gameBoard, bool visible) {
 			}
 		}
 	}
-	if (visible) {
-
-	}
 	gotoxy(gameBoard->originPoint.x, gameBoard->originPoint.y-1);
-	textcolor(WHITE);
-	if(visible)cputs("w - wypelnij te pola");
+	if (visible) {
+		textcolor(WHITE);
+		cputs("w - wypelnij te pola");
+	}
 	char action; 
 	action = visible ? getch() : 'w';
 	if (action != 'w' && action != 'W')
 		cpField(tmp_plane, gameBoard->plane, gameBoard->size);
+	if (!action)
+		getch();
 
 	for (int i = 0; i < gameBoard->size; i++) {
 		delete[] tmp_plane[i];
 	}
 	delete[] tmp_plane;
-	clrscr();
-	_setcursortype(_SOLIDCURSOR);
+	if(visible)clrscr();
 	return didSomething;
 }
 
@@ -541,21 +525,61 @@ void cpField(field** source, field** destination, int size) {
 		for (int j = 0; j < size; j++) {
 				destination[i][j].state = source[i][j].state;
 				destination[i][j].editable = source[i][j].editable;
+				destination[i][j].color = source[i][j].color;
 		}
 	}
 }
 
+int isFilled(const board* gameBoard, coords* relative) {
+	for (int i = 0; i < gameBoard->size; i++) {
+		for (int j = 0; j < gameBoard->size; j++) {
+			if (gameBoard->plane[i][j].state == S_UNSET) {
+				relative->setCoord(j, i);
+				return 0;
+			}
+		}
+	}
+	return 1;
+}
+
+
 int showSolution(field** gameField, int size) {
-	_setcursortype(_NOCURSOR);
 	board gameBoard;
 	gameBoard.initialize(size);
 	cpField(gameField, gameBoard.plane, size);
-
 	while (checkUnambiguous(&gameBoard, false));
-
-	gameBoard.show(GREEN);
-	getch();
-	gameBoard.cleanUp();
-	_setcursortype(_SOLIDCURSOR);
-	return 1;
+	if (checkContradiction(&gameBoard, false)) {
+		gameBoard.cleanUp();
+		return 0;
+	}
+	coords relative;
+	if (!isFilled(&gameBoard, &relative)) {
+		gameBoard.plane[relative.y][relative.x].color = YELLOW;
+		gameBoard.plane[relative.y][relative.x].state = S_ZERO;
+		if (showSolution(gameBoard.plane, gameBoard.size)) {
+			gameBoard.cleanUp();
+			return 1;
+		}
+		gameBoard.plane[relative.y][relative.x].state = S_ONE;
+		if (showSolution(gameBoard.plane, gameBoard.size)) {
+			gameBoard.cleanUp();
+			return 1;
+		}
+		gameBoard.cleanUp();
+		return 0;
+	}
+	else {
+		gotoxy(gameBoard.originPoint.x, gameBoard.originPoint.y - 1);
+		textbackground(GREEN);
+		cputs("Gre mozna dokonczyc");
+		int action = getch();
+		if (action == 'b' || action == 'B') {
+			gameBoard.show(GREEN);
+			getch();
+		}
+		textbackground(DEF_BG_COLOR);
+		clrscr();
+		gameBoard.cleanUp();
+		return 1;
+	}
 }

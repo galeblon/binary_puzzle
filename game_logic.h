@@ -1,7 +1,11 @@
 #ifndef game_logic
 #define game_logic
 #include"conio2.h"
-#include<stdio.h>
+#include<stdio.h> //dla obs³ugi plików.
+#include<stdlib.h> //dla rand().
+#include<time.h> //dla time().
+#include<math.h> //dla pow.
+
 
 #define DEFAULT_SIZE 8
 #define ORIGIN_X 40
@@ -16,12 +20,14 @@ enum states {
 	S_ZERO = 1,
 	S_ONE = 2
 };
+
 enum directions {
 	UP,
 	DOWN,
 	LEFT,
 	RIGHT
 };
+
 enum actions {
 	NEW_GAME,
 	QUIT_GAME,
@@ -44,18 +50,24 @@ enum actions {
 	CHECK_UNAMBIGUOUS,
 	UNDEFINED_ACTION
 };
+
 struct flags{
 	bool simpleTipToggle = false;
 	bool rule2CountToggle = false;
 	bool autoMode = false;
 };
+
 struct field {
 	states state;
 	bool editable = true;
+	int color = WHITE;
 };
+
 struct coords {
 	int x = 0;
 	int y = 0;
+
+	/*Setter dla struktury coords*/
 	void setCoord(int a, int b) { x = a; y = b; };
 };
 
@@ -65,8 +77,8 @@ struct board {
 	int size = DEFAULT_SIZE;
 	field** plane = NULL;
 
-	/*Zwraca 1 je¿eli podano odpowiedni rozmiar,
-	Zwraca 0 w przeciwnym wypadku*/
+	/*alokuje now¹ tablicê i zwraca 1 je¿eli podano odpowiedni rozmiar,
+	Zwraca 0 w przeciwnym wypadku. Automatycznie wywo³uje cleanUp*/
 	int initialize(int newSize);
 
 	/*Pobiera liczbê od u¿ytkownika i próbuje utworzyæ now¹ planszê w kolejnoœci plik, losowanie.*/
@@ -75,10 +87,16 @@ struct board {
 	/*Zwalnia pamiêæ zajmowan¹ przez plansze i ustawia wskaŸnik na NULL*/
 	void cleanUp();
 
+	/*Wyœwietla planszê z obramowaniem o kolorze podanym w parametrze.*/
 	void show(int color);
+	
+	/*Uzupe³nia losow plansze w x% gdzie x le¿y miêdzy sta³ymi THRESHOLD*/
 	void randomize();
 };
 
+/*Szybka kalkulacja miêdzy wspó³rzêdnymi w konsoli a wspó³rzêdnymi na planszy.*/
+coords globalToRelative(coords global, const board *gameBoard);
+coords relativeToGlobal(coords relative, const board *gameBoard);
 
 /*Odczytuje klawisz i zwraca akcje przypisan¹ do niego.*/
 actions getAction();
@@ -86,8 +104,7 @@ actions getAction();
 /*Wybiera odpowiedni¹ funkcjê do podanej akcji.*/
 void parseAction(board &gameBoard, actions action, coords& global_c, flags& gameFlags);
 
-coords globalToRelative(coords global, const board *gameBoard);
-coords relativeToGlobal(coords relative, const board *gameBoard);
+/*Funkcja odpowiedzialna za przemieszczanie kursora w obrêbie planszy.*/
 void move(directions direction, coords* global, const board* gameBoard);
 
 /*Próbuje wstawiæ do planszy pole o odpowiednim stanie, sprawdzaj¹c przy tym zasady gry.
@@ -112,6 +129,12 @@ Zwraca liczbê ujemn¹ jeœli istnieje identyczna kolumna, modu³ ze zwróconej liczb
 Zwraca liczbê dodatni¹ jeœli istnieje identyczny wiersz, zwrócona liczba to numer tego wiersza numeruj¹c od 1.*/
 int checkRule3(const board* gameBoard, int x, int y, states state);
 
+/*Zwraca iloœæ pól wystêpuj¹cych w danym wierszy o danej wartoœci.*/
+int countInRow(const board* gameBoard, int row, states state);
+
+/*Zwraca iloœæ pól wystêpuj¹cych w danej kolumnie o danej wartoœci.*/
+int countInCol(const board* gameBoard, int col, states state);
+
 /*Próbuje wczytaæ mapê z pliku o nazwie przekazanej do parametru do planszy przekazanej do parametru.
 Zwraca 1 w przypadku powodzenia, Zwraca 0 i wyœwietla odpowiedni komunikat w przypadku b³êdu.*/
 int loadMap(board* gameBoard, flags* gameFlags, const char* fName, bool showError);
@@ -119,18 +142,18 @@ int loadMap(board* gameBoard, flags* gameFlags, const char* fName, bool showErro
 /*Wczytuje nazwe pliku z klawiatury i wywo³uje loadmap z odpowiednimi parametrami.*/
 int loadGame(board* gameBoard, flags* gameFlags, coords* global);
 
-/*Podfunkcja loadMap, sprawdza i informuje czy wczytywany plik jest poprawnie uformowany.*/
-int isValidFromFile(board* gameBoard, coords relative, char val, bool showError);
-
 /*Odpowiedzialny za odczyt i interptacje bitów na koñcu plików odpowiedzialnych za stan flag w grze.*/
 void loadFlags(flags* gameFlags, FILE* fpointer);
 
-/*Prosi u¿ytkownika o podanie nazwy pliku, tworzy nowy plik i zapisuje w nim informacje o stanie rozgrywki.*/
-int saveMap(const board* gameBoard, const flags* gameFlags);
+/*Podfunkcja loadMap, sprawdza i informuje czy wczytywany plik jest poprawnie uformowany.*/
+void isValidFromFile(board* gameBoard, coords relative, char val, bool showError);
 
 /*Sprawdza czy dana wartoœæ nie ³amie ¿adnej zasady w danym polu, zwraca true jeœli tak jest.
 zwraca false w przeciwnym wypadku.*/
 bool isValidInput(const board* gameBoard, int x, int y, states state);
+
+/*Prosi u¿ytkownika o podanie nazwy pliku, tworzy nowy plik i zapisuje w nim informacje o stanie rozgrywki.*/
+int saveMap(const board* gameBoard, const flags* gameFlags);
 
 /*Przechodzi przez plansze i podswietla punkty w ktorych nie mo¿na nic wpisaæ.
 Zwraca 1 je¿eli znajdzie siê pole sprzeczne.*/
@@ -144,12 +167,11 @@ int checkUnambiguous(board* gameBoard, bool visible);
 /*Przepisuje pola z source do destination, size to rozmiar jednego wymiaru kwadratowej tablicy.*/
 void cpField(field** source, field** destination, int size);
 
-/*Zwraca iloœæ pól wystêpuj¹cych w danym wierszy o danej wartoœci.*/
-int countInRow(const board* gameBoard, int row, states state);
+/*Przechodzi przez planszê, zwraca 0 gdy znajdzie pierwszy niewype³niony element. relative bêdzie wskazywaæ na niego.*/
+int isFilled(const board* gameBoard, coords* relative);
 
-/*Zwraca iloœæ pól wystêpuj¹cych w danej kolumnie o danej wartoœci.*/
-int countInCol(const board* gameBoard, int col, states state);
-
+/*Funkcja rekurencyjna poszukuj¹ca rozwi¹zania uk³adu.
+Zwracane zero sugeruje œlepy zau³ek, cofaj¹c siê w drzewie do poprzednich ga³êzi.*/
 int showSolution(field** gameField, int size);
 
 #endif 
